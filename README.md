@@ -1,4 +1,4 @@
-# lecturnote
+# lecturnote - Beta 1.0
 
 Keyboard-first lecture notes editor for Computational Biology, Bioinformatics, and Mathematics.
 Built with Electron — runs as a native desktop app, fully offline, no server required.
