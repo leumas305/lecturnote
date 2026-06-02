@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="800"
+   height="320"
+   viewBox="0 0 800 320"
+   version="1.1"
+   id="svg62"
+   sodipodi:docname="banner.svg"
+   inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview64"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     showgrid="false"
+     inkscape:zoom="1.1040474"
+     inkscape:cx="437.02833"
+     inkscape:cy="121.82448"
+     inkscape:window-width="1850"
+     inkscape:window-height="1016"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg62" />
+  <defs
+     id="defs4">
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient1831">
+      <stop
+         style="stop-color:#030c5d;stop-opacity:0.57679367"
+         offset="0"
+         id="stop1827" />
+      <stop
+         style="stop-color:#000078;stop-opacity:0"
+         offset="1"
+         id="stop1829" />
+    </linearGradient>
+    <style
+       id="style2">
+      @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400');
+    </style>
+    <radialGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient1831"
+       id="radialGradient1833"
+       cx="54.053158"
+       cy="-32.99173"
+       fx="54.053158"
+       fy="-32.99173"
+       r="132.50771"
+       gradientTransform="matrix(0.01089882,-0.76799403,1.1489512,0.013973,656.20569,150.15727)"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <!-- Background -->
+  <!-- Glow -->
+  <!-- Eyebrow -->
+  <!-- Title -->
+  <!-- Subtitle -->
+  <!-- Divider -->
+  <!-- Pills row -->
+  <!-- live math preview -->
+  <!-- hunspell EN/ES -->
+  <!-- sequence blocks -->
+  <!-- concept maps -->
+  <!-- exercises + TOC -->
+  <!-- pdf export -->
+  <!-- Install command -->
+  <!-- Footer -->
+  <g
+     id="g8405"
+     transform="translate(4.1466743,50.043141)">
+    <rect
+       width="800"
+       height="231.86711"
+       rx="12"
+       fill="#0f0f13"
+       id="rect6"
+       x="0"
+       y="0"
+       style="stroke-width:0.851225" />
+    <text
+       x="48"
+       y="62"
+       font-family="'JetBrains Mono', monospace"
+       font-size="11px"
+       fill="#5a5a72"
+       letter-spacing="2"
+       id="text12">OPEN SOURCE · ELECTRON · OFFLINE</text>
+    <text
+       x="46"
+       y="130.54721"
+       font-family="Fraunces, Georgia, serif"
+       font-size="72px"
+       font-weight="400"
+       fill="#a599ff"
+       letter-spacing="-2"
+       id="text14">lectur</text>
+    <text
+       x="253.24005"
+       y="130.54721"
+       font-family="Fraunces, Georgia, serif"
+       font-size="72px"
+       font-weight="400"
+       font-style="italic"
+       fill="#7c6af7"
+       letter-spacing="-2"
+       id="text16">note</text>
+    <text
+       x="48"
+       y="160"
+       font-family="Fraunces, Georgia, serif"
+       font-size="17px"
+       font-style="italic"
+       fill="#5a5a72"
+       id="text18">keyboard-first notes for science &amp; mathematics</text>
+    <line
+       x1="48"
+       y1="180"
+       x2="752"
+       y2="180"
+       stroke="#1e1e28"
+       stroke-width="1"
+       id="line20" />
+    <rect
+       x="48"
+       y="192"
+       width="136"
+       height="24"
+       rx="12"
+       fill="rgba(124,106,247,0.1)"
+       stroke="rgba(124,106,247,0.3)"
+       stroke-width="1"
+       id="rect22" />
+    <text
+       x="116"
+       y="209"
+       font-family="'JetBrains Mono', monospace"
+       font-size="10.5px"
+       fill="#a599ff"
+       text-anchor="middle"
+       id="text24">live math preview</text>
+    <rect
+       x="192"
+       y="192"
+       width="110"
+       height="24"
+       rx="12"
+       fill="rgba(56,196,190,0.1)"
+       stroke="rgba(56,196,190,0.3)"
+       stroke-width="1"
+       id="rect26" />
+    <text
+       x="247"
+       y="209"
+       font-family="'JetBrains Mono', monospace"
+       font-size="10.5px"
+       fill="#38c4be"
+       text-anchor="middle"
+       id="text28">hunspell EN/ES</text>
+    <rect
+       x="310"
+       y="192"
+       width="116"
+       height="24"
+       rx="12"
+       fill="rgba(74,158,255,0.1)"
+       stroke="rgba(74,158,255,0.3)"
+       stroke-width="1"
+       id="rect30" />
+    <text
+       x="368"
+       y="209"
+       font-family="'JetBrains Mono', monospace"
+       font-size="10.5px"
+       fill="#4a9eff"
+       text-anchor="middle"
+       id="text32">sequence blocks</text>
+    <rect
+       x="434"
+       y="192"
+       width="104"
+       height="24"
+       rx="12"
+       fill="rgba(245,184,66,0.1)"
+       stroke="rgba(245,184,66,0.3)"
+       stroke-width="1"
+       id="rect34" />
+    <text
+       x="486"
+       y="209"
+       font-family="'JetBrains Mono', monospace"
+       font-size="10.5px"
+       fill="#f5b842"
+       text-anchor="middle"
+       id="text36">concept maps</text>
+    <rect
+       x="546"
+       y="192"
+       width="108"
+       height="24"
+       rx="12"
+       fill="rgba(78,202,139,0.1)"
+       stroke="rgba(78,202,139,0.3)"
+       stroke-width="1"
+       id="rect38" />
+    <text
+       x="600"
+       y="209"
+       font-family="'JetBrains Mono', monospace"
+       font-size="10.5px"
+       fill="#4eca8b"
+       text-anchor="middle"
+       id="text40">exercises + TOC</text>
+    <rect
+       x="662"
+       y="192"
+       width="90"
+       height="24"
+       rx="12"
+       fill="rgba(124,106,247,0.1)"
+       stroke="rgba(124,106,247,0.3)"
+       stroke-width="1"
+       id="rect42" />
+    <text
+       x="707"
+       y="209"
+       font-family="'JetBrains Mono', monospace"
+       font-size="10.5px"
+       fill="#a599ff"
+       text-anchor="middle"
+       id="text44">pdf export</text>
+    <ellipse
+       style="fill:url(#radialGradient1833);fill-opacity:1;stroke-width:4.86975;stop-color:#000000"
+       id="path1703"
+       cx="616.61066"
+       cy="109.12086"
+       rx="183.90614"
+       ry="105.41228" />
+  </g>
+</svg>
