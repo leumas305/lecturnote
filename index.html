@@ -1,0 +1,2697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lecturnote</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&family=Fraunces:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/tokyo-night-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f13;--surface:#16161d;--surface2:#1e1e28;--surface3:#252532;
+  --border:#2a2a38;--border2:#3a3a50;
+  --text:#e8e8f0;--text2:#9090a8;--text3:#5a5a72;
+  --accent:#7c6af7;--accent2:#a599ff;
+  --green:#4eca8b;--amber:#f5b842;--coral:#f07060;
+  --teal:#38c4be;--pink:#e060a0;--blue:#4a9eff;
+  --mono:'JetBrains Mono',monospace;--serif:'Fraunces',serif;
+}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14px;display:flex;flex-direction:column}
+
+/* ── Topbar ── */
+#topbar{display:flex;align-items:center;gap:8px;padding:0 14px;padding-left:80px;height:38px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;user-select:none;-webkit-app-region:drag}
+#topbar button,#topbar input,#topbar a,#topbar select{-webkit-app-region:no-drag}
+#logo{font-family:var(--serif);font-size:16px;color:var(--accent2);letter-spacing:-0.5px;white-space:nowrap;margin-right:4px}
+#note-name{background:transparent;border:none;outline:none;color:var(--text2);font-family:var(--mono);font-size:12px;width:180px;border-bottom:1px solid var(--border2);padding:2px 4px}
+#note-name:focus{border-bottom-color:var(--accent);color:var(--text)}
+#topbar-actions{display:flex;align-items:center;gap:5px;margin-left:auto}
+.tbar-btn{background:var(--surface2);border:1px solid var(--border2);border-radius:5px;color:var(--text2);font-family:var(--mono);font-size:10px;padding:3px 8px;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.tbar-btn:hover{border-color:var(--accent);color:var(--accent2)}
+.tbar-btn svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.kb-pill{font-size:9px;background:var(--border);border-radius:3px;padding:1px 4px;color:var(--text3)}
+#dict-select{background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text2);font-family:var(--mono);font-size:10px;padding:3px 6px;outline:none;cursor:pointer}
+
+/* ── Sidebar ── */
+#sidebar{position:absolute;left:0;top:38px;bottom:0;width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;transform:translateX(-100%);transition:transform 0.2s ease;z-index:50}
+#sidebar.open{transform:translateX(0)}
+#sidebar-header{padding:10px 14px 8px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+#new-note-btn{background:none;border:1px solid var(--border2);border-radius:4px;color:var(--accent2);font-size:16px;line-height:1;cursor:pointer;padding:0 5px 1px}
+#new-note-btn:hover{background:var(--surface2)}
+#sidebar-tags{padding:6px 10px;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:4px;min-height:30px}
+.tag-filter-chip{font-size:10px;padding:2px 7px;border-radius:10px;border:1px solid var(--border2);color:var(--text3);cursor:pointer;background:var(--surface2)}
+.tag-filter-chip:hover,.tag-filter-chip.active{border-color:var(--accent);color:var(--accent2);background:rgba(124,106,247,0.1)}
+#notes-list{flex:1;overflow-y:auto;padding:6px 0}
+.note-item{padding:8px 14px;cursor:pointer;font-size:12px;color:var(--text2);display:flex;align-items:center;justify-content:space-between;gap:6px}
+.note-item:hover{background:var(--surface2);color:var(--text)}
+.note-item.active{background:var(--surface3);color:var(--accent2)}
+.note-item-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.note-item-date{font-size:9px;color:var(--text3);white-space:nowrap}
+.note-delete-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;padding:0 2px;line-height:1;display:none}
+.note-item:hover .note-delete-btn{display:block}
+.note-delete-btn:hover{color:var(--coral)}
+
+/* ── Main layout ── */
+#main{display:flex;flex:1;overflow:hidden;transition:margin-left 0.2s ease}
+#main.sidebar-open{margin-left:220px}
+#editor-pane{flex:1;display:flex;flex-direction:column;border-right:1px solid var(--border);position:relative;min-width:0}
+#editor-header{padding:5px 14px;border-bottom:1px solid var(--border);font-size:10px;color:var(--text3);display:flex;align-items:center;gap:8px;background:var(--surface);flex-shrink:0}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block}
+#editor{flex:1;background:transparent;border:none;outline:none;resize:none;color:var(--text);font-family:var(--mono);font-size:13.5px;line-height:1.85;padding:20px 24px;caret-color:var(--accent2);width:100%;transition:background 0.45s ease;tab-size:2}
+#editor::selection{background:rgba(124,106,247,0.25)}
+#editor.flash-green{background:rgba(78,202,139,0.07)}
+#editor.flash-purple{background:rgba(124,106,247,0.08)}
+
+/* ── Preview ── */
+#preview-pane{flex:1;overflow-y:auto;padding:22px 32px 60px;background:var(--bg);min-width:0}
+#preview-pane .jump-target{animation:jump-flash 1s ease}
+@keyframes jump-flash{0%{background:rgba(124,106,247,0.15)}100%{background:transparent}}
+#preview-pane h1{font-family:var(--serif);font-size:26px;color:var(--accent2);margin:0 0 12px;line-height:1.25}
+#preview-pane h2{font-family:var(--serif);font-size:19px;color:var(--text);margin:22px 0 8px;border-bottom:1px solid var(--border);padding-bottom:5px}
+#preview-pane h3{font-size:14px;color:var(--accent2);margin:16px 0 6px;font-weight:500}
+#preview-pane h4{font-size:13px;color:var(--text2);margin:12px 0 4px;font-weight:500}
+#preview-pane p{line-height:1.78;margin:0 0 10px;color:var(--text)}
+#preview-pane ul,#preview-pane ol{margin:0 0 10px 20px;line-height:1.78}
+#preview-pane li{color:var(--text);margin-bottom:3px}
+#preview-pane strong{color:var(--amber);font-weight:600}
+#preview-pane em{color:var(--text2);font-style:italic}
+#preview-pane code{background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-family:var(--mono);font-size:11.5px;color:var(--teal)}
+#preview-pane pre{background:#1a1b2e;border:1px solid #2a2a3e;border-radius:8px;padding:14px 18px;margin:0 0 14px;overflow-x:auto;position:relative}
+#preview-pane pre code.hljs{background:transparent;border:none;padding:0;font-size:12.5px;line-height:1.7;color:inherit}
+#preview-pane pre .lang-badge{position:absolute;top:7px;right:10px;font-size:9px;font-family:var(--mono);color:#565f89;text-transform:uppercase;letter-spacing:.8px;pointer-events:none}
+#preview-pane blockquote{border-left:3px solid var(--accent);padding-left:14px;margin:0 0 12px;color:var(--text2);border-radius:0}
+#preview-pane hr{border:none;border-top:1px solid var(--border);margin:18px 0}
+#preview-pane table{border-collapse:collapse;width:100%;margin:0 0 14px;font-size:12.5px}
+#preview-pane th{background:var(--surface2);border:1px solid var(--border2);padding:7px 12px;text-align:left;color:var(--accent2);font-weight:500}
+#preview-pane td{border:1px solid var(--border);padding:7px 12px;color:var(--text)}
+#preview-pane tr:hover td{background:var(--surface2)}
+#preview-pane img{max-width:100%;border-radius:6px;margin:6px 0}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:6px 0}
+.katex{font-size:1.06em}
+#preview-pane a.internal-anchor{color:var(--accent2);text-decoration:none;border-bottom:1px dashed var(--accent);cursor:pointer;font-style:italic}
+#preview-pane a.internal-anchor:hover{border-bottom-style:solid}
+
+/* ── Colored boxes ── */
+.note-box{border-left:3px solid;border-radius:0;padding:12px 18px;margin:10px 0 14px}
+.note-box .box-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.note-box .box-label::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block}
+.note-box>*:last-child{margin-bottom:0}
+.box-example{background:rgba(74,158,255,.07);border-color:#4a9eff}.box-example .box-label{color:#4a9eff}
+.box-definition{background:rgba(78,202,139,.07);border-color:#4eca8b}.box-definition .box-label{color:#4eca8b}
+.box-theorem{background:rgba(124,106,247,.09);border-color:#7c6af7}.box-theorem .box-label{color:#a599ff}
+.box-warning{background:rgba(245,184,66,.07);border-color:#f5b842}.box-warning .box-label{color:#f5b842}
+.box-note{background:rgba(238,96,160,.07);border-color:#e060a0}.box-note .box-label{color:#e060a0}
+.box-proof{background:rgba(56,196,190,.07);border-color:#38c4be}.box-proof .box-label{color:#38c4be}
+.box-remark{background:rgba(144,144,168,.07);border-color:#9090a8}.box-remark .box-label{color:#9090a8}
+
+/* ── Sequence box ── */
+.seq-block{font-family:var(--mono);font-size:13px;line-height:2;padding:14px 18px;margin:10px 0 14px;background:#0d1117;border:1px solid var(--border2);border-radius:8px;overflow-x:auto;white-space:pre}
+.seq-block .seq-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px;display:block}
+.seq-block .seq-header{font-size:11px;color:var(--text3);margin-bottom:4px;display:block}
+/* DNA/RNA base colors */
+.b-A{color:#4eca8b}.b-T{color:#f07060}.b-G{color:#f5b842}.b-C{color:#4a9eff}
+.b-U{color:#e060a0}.b-N{color:#9090a8}
+/* Protein one-letter codes */
+.b-hydrophobic{color:#a599ff}.b-polar{color:#38c4be}.b-charged-pos{color:#4a9eff}
+.b-charged-neg{color:#f07060}.b-special{color:#f5b842}
+
+/* ── Mermaid diagram ── */
+.mermaid-wrap{margin:10px 0 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;text-align:center}
+.mermaid-wrap svg{max-width:100%;height:auto}
+
+/* ── Table of contents box ── */
+.toc-box {
+  background: rgba(56,196,190,0.06);
+  border-left: 3px solid var(--teal);
+  border-radius: 0;
+  padding: 14px 20px;
+  margin: 10px 0 16px;
+}
+.toc-box .toc-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--teal);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.toc-box .toc-title::before {
+  content: '';
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--teal);
+  display: inline-block;
+}
+.toc-box ol {
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1;
+}
+.toc-box ol ol { margin-top: 2px; padding-left: 18px; }
+.toc-box li { margin-bottom: 5px; }
+.toc-box a.toc-link {
+  color: var(--text2);
+  text-decoration: none;
+  font-size: 13px;
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.toc-box a.toc-link:hover { color: var(--teal); border-bottom-color: var(--teal); }
+/* Section numbers in headings */
+.section-num {
+  color: var(--teal);
+  font-size: 0.75em;
+  margin-right: 8px;
+  font-family: var(--mono);
+  opacity: 0.8;
+}
+.toc-box .toc-num {
+  color: var(--teal);
+  font-size: 11px;
+  font-weight: 600;
+  margin-right: 6px;
+  min-width: 28px;
+  display: inline-block;
+}@media print {
+  .toc-box { background: #eafffe !important; border-color: #007a6a !important; }
+  .toc-box a.toc-link { color: #1a5a5a !important; }
+  .toc-box .toc-num, .toc-box .toc-title { color: #007a6a !important; }
+  .section-num { color: #999 !important; }
+}
+
+/* ── Visual table editor ── */
+#table-editor-modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow: hidden;
+}
+#table-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 12px;
+}
+#table-editor-wrap {
+  overflow: auto;
+  padding: 16px;
+  flex: 1;
+}
+#table-editor-grid {
+  border-collapse: collapse;
+}
+#table-editor-grid td {
+  padding: 0;
+  border: 1px solid var(--border2);
+}
+#table-editor-grid td.header-cell {
+  border-color: var(--accent);
+  background: rgba(124,106,247,0.06);
+}
+#table-editor-grid td input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 6px 10px;
+  width: 130px;
+  min-width: 80px;
+  caret-color: var(--accent2);
+}
+#table-editor-grid td.header-cell input {
+  color: var(--accent2);
+  font-weight: 500;
+}
+#table-editor-grid td input:focus {
+  background: rgba(124,106,247,0.1);
+}
+#table-editor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.tbl-ctrl-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  color: var(--text2);
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.tbl-ctrl-btn:hover { border-color: var(--accent); color: var(--accent2); }
+
+/* ── Modals / overlays ── */
+.overlay{position:absolute;inset:0;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;z-index:80}
+.overlay.hidden{display:none}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:24px 28px;min-width:310px;text-align:center}
+.modal-title{font-family:var(--serif);font-size:18px;color:var(--accent2);margin-bottom:6px}
+.modal-sub{font-size:11px;color:var(--text2);margin-bottom:18px;line-height:1.6}
+.dim-input{width:54px;background:var(--surface2);border:2px solid var(--border2);border-radius:7px;color:var(--text);font-family:var(--mono);font-size:26px;text-align:center;padding:7px 0;outline:none}
+.dim-input:focus{border-color:var(--accent)}
+.modal-hint{margin-top:12px;font-size:10px;color:var(--text3)}
+.modal-actions{display:flex;gap:8px;justify-content:center;margin-top:16px}
+.btn{padding:7px 18px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-family:var(--mono);font-size:11px;cursor:pointer}
+.btn:hover{border-color:var(--accent);color:var(--accent2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent2)}
+.box-picker{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.box-opt{padding:10px 12px;border-radius:7px;border:1px solid var(--border2);cursor:pointer;text-align:left;background:var(--surface2)}
+.box-opt:hover{opacity:.82}
+.box-opt-title{font-size:12px;font-weight:500;margin-bottom:2px}
+.box-opt-sub{font-size:10px;opacity:.65}
+
+/* ── Jump palette ── */
+#jump-palette{position:absolute;top:40px;left:50%;transform:translateX(-50%);width:380px;background:var(--surface);border:1px solid var(--border2);border-radius:9px;z-index:90;overflow:hidden}
+#jump-palette.hidden{display:none}
+#jump-filter{width:100%;background:var(--surface2);border:none;border-bottom:1px solid var(--border);outline:none;color:var(--text);font-family:var(--mono);font-size:13px;padding:10px 14px}
+#jump-list{max-height:280px;overflow-y:auto}
+.jump-item{padding:8px 14px;cursor:pointer;font-size:12px;color:var(--text2);display:flex;align-items:baseline;gap:8px}
+.jump-item:hover,.jump-item.selected{background:var(--surface2);color:var(--text)}
+.jump-level{font-size:9px;color:var(--text3);min-width:16px}
+
+/* ── Anchor dropdown ── */
+#anchor-dropdown{position:absolute;background:var(--surface);border:1px solid var(--border2);border-radius:8px;z-index:110;overflow:hidden;min-width:240px;max-width:360px}
+#anchor-dropdown.hidden{display:none}
+#anchor-search{width:100%;background:var(--surface2);border:none;border-bottom:1px solid var(--border);outline:none;color:var(--text);font-family:var(--mono);font-size:12px;padding:8px 12px}
+#anchor-list{max-height:200px;overflow-y:auto}
+.anchor-item{padding:7px 12px;cursor:pointer;font-size:12px;color:var(--text2);display:flex;align-items:baseline;gap:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.anchor-item:hover,.anchor-item.sel{background:var(--surface2);color:var(--text)}
+.anchor-item .a-level{font-size:9px;color:var(--text3);min-width:14px}
+#anchor-hint{padding:5px 12px;font-size:10px;color:var(--text3);border-top:1px solid var(--border)}
+
+/* ── Code picker ── */
+#code-picker{position:absolute;top:40px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border2);border-radius:10px;z-index:90;overflow:hidden;width:340px}
+#code-picker.hidden{display:none}
+#code-picker-title{padding:10px 14px 8px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border);background:var(--surface2)}
+#code-lang-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:0}
+.lang-opt{padding:11px 6px;cursor:pointer;text-align:center;border-right:1px solid var(--border);border-bottom:1px solid var(--border);transition:background .1s}
+.lang-opt:hover{background:var(--surface2)}
+.lang-opt-key{font-size:14px;font-weight:500;color:var(--accent2);display:block;margin-bottom:3px}
+.lang-opt-name{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+#code-picker-hint{padding:7px 14px;font-size:10px;color:var(--text3);border-top:1px solid var(--border)}
+
+/* ── Snippet autocomplete ── */
+#snippet-hint{position:absolute;background:var(--surface);border:1px solid var(--accent);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--accent2);z-index:120;pointer-events:none;white-space:nowrap}
+#snippet-hint.hidden{display:none}
+#snippet-hint kbd{background:var(--border);border-radius:3px;padding:1px 5px;font-size:10px;color:var(--text);font-family:var(--mono);margin-left:6px}
+
+/* ── Scratchpad ── */
+#scratchpad{position:absolute;bottom:60px;right:20px;width:300px;background:var(--surface);border:1px solid var(--border2);border-radius:10px;z-index:95;overflow:hidden;display:flex;flex-direction:column}
+#scratchpad.hidden{display:none}
+#scratchpad-header{padding:7px 12px;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2);cursor:move}
+#scratchpad-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;padding:0 2px}
+#scratchpad-close:hover{color:var(--coral)}
+#scratchpad-area{background:transparent;border:none;outline:none;resize:none;color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.7;padding:12px;width:100%;height:160px;caret-color:var(--accent2)}
+
+/* ── Toast ── */
+#toast{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:6px 14px;font-size:11px;color:var(--text2);z-index:200;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1}
+
+/* ── Math/cheatsheet ref ── */
+#math-ref{margin-top:32px;padding-top:12px;border-top:1px solid var(--border);font-size:10px;color:var(--text3)}
+#math-ref .ref-title{margin-bottom:7px;letter-spacing:.5px}
+#math-ref .ref-chips{display:flex;flex-wrap:wrap;gap:4px}
+#math-ref .chip{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:10px;color:var(--text2);font-family:var(--mono)}
+
+/* ── Exercises ── */
+.exercise-ref{display:inline-flex;align-items:center;gap:6px;background:rgba(245,184,66,.08);border:1px solid rgba(245,184,66,.3);border-radius:5px;padding:3px 10px;font-size:11px;color:var(--amber);font-family:var(--mono);cursor:pointer;text-decoration:none;vertical-align:middle;margin:2px 0}
+.exercise-ref:hover{background:rgba(245,184,66,.15);border-color:var(--amber)}
+.exercise-ref-dot{font-size:9px}
+#exercises-section{margin-top:32px;padding-top:18px;border-top:2px solid var(--amber)}
+#exercises-section.empty{display:none}
+#exercises-section-title{font-family:var(--serif);font-size:18px;color:var(--amber);margin-bottom:18px}
+.exercise-card{background:var(--surface2);border:1px solid rgba(245,184,66,.2);border-left:3px solid var(--amber);border-radius:0;padding:16px 20px;margin-bottom:14px}
+.exercise-card-header{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+.exercise-card-num{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--amber)}
+.exercise-card-name{font-size:14px;color:var(--text);font-weight:500}
+.exercise-card-body{color:var(--text);line-height:1.75}
+.exercise-card-body p:last-child{margin-bottom:0}
+.solution-toggle{display:flex;align-items:center;gap:6px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);background:none;border-left:none;border-right:none;border-bottom:none;color:var(--teal);font-family:var(--mono);font-size:11px;cursor:pointer;padding-left:0}
+.solution-toggle:hover{color:var(--accent2)}
+.solution-toggle-arrow{transition:transform .2s;display:inline-block}
+.solution-toggle.open .solution-toggle-arrow{transform:rotate(90deg)}
+.solution-body{margin-top:10px;padding:12px 16px;background:rgba(56,196,190,.06);border-left:2px solid var(--teal);color:var(--text);line-height:1.75;border-radius:0}
+.solution-body.hidden{display:none}
+.solution-body p:last-child{margin-bottom:0}
+
+/* ── Settings panel ── */
+#settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;z-index:300}
+#settings-overlay.hidden{display:none}
+#settings-panel{background:var(--surface);border:1px solid var(--border2);border-radius:12px;width:560px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden}
+#settings-header{padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#settings-title{font-family:var(--serif);font-size:18px;color:var(--accent2)}
+#settings-close{background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;line-height:1;padding:0 4px}
+#settings-close:hover{color:var(--coral)}
+#settings-body{flex:1;overflow-y:auto;padding:20px}
+.settings-section-title{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:12px}
+.shortcut-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)}
+.shortcut-row:last-child{border-bottom:none}
+.shortcut-label{font-size:12px;color:var(--text2)}
+.shortcut-label span{font-size:10px;color:var(--text3);display:block;margin-top:2px}
+.shortcut-binding{display:flex;align-items:center;gap:8px}
+.binding-display{background:var(--surface2);border:1px solid var(--border2);border-radius:5px;padding:4px 10px;font-family:var(--mono);font-size:11px;color:var(--text);min-width:80px;text-align:center;cursor:pointer;transition:border-color .15s}
+.binding-display:hover{border-color:var(--accent)}
+.binding-display.recording{border-color:var(--accent2);color:var(--accent2);animation:blink-border 0.8s ease infinite}
+@keyframes blink-border{0%,100%{border-color:var(--accent2)}50%{border-color:var(--border2)}}
+.binding-reset{background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;padding:2px 6px;border-radius:4px;font-family:var(--mono)}
+.binding-reset:hover{color:var(--coral)}
+.conflict-badge{font-size:10px;color:var(--coral);background:rgba(240,112,96,.12);border:1px solid rgba(240,112,96,.3);border-radius:4px;padding:2px 7px;margin-top:4px;display:none}
+.conflict-badge.show{display:block}
+#settings-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;font-size:11px;color:var(--text3)}
+#settings-reset-all{background:none;border:1px solid var(--border2);border-radius:5px;color:var(--text3);font-family:var(--mono);font-size:10px;padding:5px 12px;cursor:pointer}
+#settings-reset-all:hover{border-color:var(--coral);color:var(--coral)}
+
+/* ── Print ── */
+@media print{
+  /* ── Reset all layout constraints so content flows freely across pages ── */
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+    color: #111 !important;
+  }
+  /* Hide everything except the preview pane */
+  #topbar, #editor-pane, #sidebar, #math-ref,
+  .overlay, #jump-palette, #toast, #scratchpad,
+  #exercises-section .solution-toggle,
+  #settings-overlay { display: none !important; }
+
+  /* Free the layout containers from flexbox sizing */
+  #main {
+    display: block !important;
+    margin-left: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+  #preview-pane {
+    display: block !important;
+    flex: none !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  /* ── Typography for print ── */
+  #preview-pane h1 { color: #1a1a2e; page-break-after: avoid; break-after: avoid; font-size: 22pt; }
+  #preview-pane h2 { color: #1a1a2e; border-color: #ccc; page-break-after: avoid; break-after: avoid; font-size: 16pt; }
+  #preview-pane h3, #preview-pane h4 { color: #1a1a2e; page-break-after: avoid; break-after: avoid; }
+  #preview-pane p, #preview-pane li { color: #222; }
+  #preview-pane strong { color: #222 !important; }
+  #preview-pane em { color: #444 !important; }
+  #preview-pane a.internal-anchor { color: #555; border-bottom: 1px dashed #999; }
+
+  /* ── Code blocks ── */
+  #preview-pane code { background: #f0f0f0; border-color: #ddd; color: #1a6a6a; }
+  #preview-pane pre  { background: #f6f6f6 !important; border-color: #ddd; page-break-inside: avoid; break-inside: avoid; }
+
+  /* ── Tables ── */
+  #preview-pane th { background: #f0f0f8; color: #333; border-color: #bbb; }
+  #preview-pane td { border-color: #ccc; color: #222; }
+  #preview-pane table { page-break-inside: avoid; break-inside: avoid; }
+
+  /* ── Colored boxes — keep together, light backgrounds ── */
+  .note-box { border-left-width: 3px; page-break-inside: avoid; break-inside: avoid; }
+  .box-example    { background: #edf5ff !important; }
+  .box-definition { background: #edfff5 !important; }
+  .box-theorem    { background: #f3eeff !important; }
+  .box-warning    { background: #fffbea !important; }
+  .box-note       { background: #fff0f8 !important; }
+  .box-proof      { background: #eafffe !important; }
+  .box-remark     { background: #f5f5f7 !important; }
+  .box-label { color: inherit !important; }
+
+  /* ── Sequence blocks ── */
+  .seq-block {
+    background: #f8f8f8 !important;
+    border-color: #ddd !important;
+    color: #111 !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  /* Print base colors as greyscale approximations */
+  .b-A { color: #2a7a4a !important; }
+  .b-T { color: #c03020 !important; }
+  .b-G { color: #a07010 !important; }
+  .b-C { color: #1a5a9a !important; }
+  .b-U { color: #902060 !important; }
+  .b-hydrophobic { color: #5040a0 !important; }
+  .b-polar       { color: #1a7070 !important; }
+  .b-charged-pos { color: #1a5a9a !important; }
+  .b-charged-neg { color: #c03020 !important; }
+
+  /* ── Graphs ── */
+  .mermaid-wrap { page-break-inside: avoid; break-inside: avoid; background: #f8f8f8 !important; border-color: #ddd !important; }
+  .mermaid-wrap svg { max-width: 100%; }
+
+  /* ── Math ── */
+  .katex-display { page-break-inside: avoid; break-inside: avoid; }
+
+  /* ── Exercises ── */
+  #exercises-section { border-top-color: #b07000 !important; }
+  #exercises-section-title { color: #b07000 !important; font-size: 16pt; }
+  .exercise-card { background: #fffbea !important; border-color: #b07000 !important; page-break-inside: avoid; break-inside: avoid; }
+  .exercise-card-num { color: #007a6a !important; }
+  .solution-body { display: block !important; background: #eafffe !important; border-color: #007a6a !important; }
+
+  /* ── Page settings ── */
+  @page { margin: 2cm 2.5cm; size: A4; }
+}
+  @page{margin:2cm 2.5cm}
+}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span id="logo">lecturnote</span>
+  <button class="tbar-btn" onclick="toggleSidebar()" title="Ctrl+Alt+O">
+    <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>notes
+  </button>
+  <input id="note-name" type="text" value="Untitled note" spellcheck="false">
+  <div id="spell-status" style="-webkit-app-region:no-drag;font-size:10px;padding:2px 8px;border-radius:4px;background:var(--surface2);border:1px solid var(--border2);color:var(--text3);white-space:nowrap">spell: checking…</div>
+  <div id="topbar-actions">
+    <div style="-webkit-app-region:no-drag;display:flex;align-items:center;gap:4px">
+      <svg viewBox="0 0 24 24" style="width:11px;height:11px;stroke:var(--text3);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      <select id="dict-select" title="Autocorrect dictionary">
+        <option value="en">English</option>
+        <option value="es">Spanish</option>
+        <option value="both" selected>Both</option>
+        <option value="off">Off</option>
+      </select>
+    </div>
+    <button class="tbar-btn" onclick="openJump()" title="Ctrl+G"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>jump <span class="kb-pill">C-G</span></button>
+    <button class="tbar-btn" onclick="insertTimestamp()" title="Ctrl+Alt+Space"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>stamp <span class="kb-pill">C-A-Sp</span></button>
+    <button class="tbar-btn" onclick="openAnchorPicker()" title="Ctrl+Alt+K"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>anchor <span class="kb-pill">C-A-K</span></button>
+    <button class="tbar-btn" onclick="toggleScratchpad()" title="Ctrl+Alt+Z"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>scratch <span class="kb-pill">C-A-Z</span></button>
+    <button class="tbar-btn" onclick="openSettings()" title="Ctrl+, — shortcuts settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>shortcuts <span class="kb-pill">Ctrl+,</span></button>
+    <button class="tbar-btn" onclick="exportPDF()" title="Ctrl+Shift+S"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>PDF <span class="kb-pill">C-S-S</span></button>
+  </div>
+</div>
+
+<div id="sidebar">
+  <div id="sidebar-header">notes<button id="new-note-btn" onclick="newNote()" title="New note">+</button></div>
+  <div id="sidebar-tags"></div>
+  <div id="notes-list"></div>
+</div>
+
+<div id="main">
+  <div id="editor-pane">
+    <div id="editor-header">
+      <span class="dot"></span>
+      <span>editor · markdown + math</span>
+      <span id="wordcount" style="margin-left:auto">0 words</span>
+    </div>
+    <textarea id="editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+
+    <!-- Table modal -->
+    <!-- Visual table editor -->
+    <div class="overlay hidden" id="table-overlay">
+      <div id="table-editor-modal">
+        <div id="table-editor-header">
+          <span style="font-family:var(--serif);font-size:16px;color:var(--accent2)">table editor</span>
+          <div style="display:flex;gap:6px;align-items:center">
+            <button class="tbl-ctrl-btn" id="tbl-add-col" title="Add column">+ col</button>
+            <button class="tbl-ctrl-btn" id="tbl-del-col" title="Remove last column">− col</button>
+            <button class="tbl-ctrl-btn" id="tbl-add-row" title="Add row">+ row</button>
+            <button class="tbl-ctrl-btn" id="tbl-del-row" title="Remove last row">− row</button>
+          </div>
+        </div>
+        <div id="table-editor-wrap">
+          <table id="table-editor-grid"></table>
+        </div>
+        <div id="table-editor-footer">
+          <span style="font-size:10px;color:var(--text3)">Tab navigate · Enter confirm · Esc cancel · Ctrl+/− row · Ctrl+Shift+/− col</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn" id="tbl-cancel">Cancel</button>
+            <button class="btn primary" id="tbl-insert">Insert</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Box modal -->
+    <div class="overlay hidden" id="box-overlay">
+      <div class="modal">
+        <div class="modal-title">Insert box</div>
+        <div class="modal-sub">Choose a type, or use the shortcut directly</div>
+        <div class="box-picker">
+          <div class="box-opt" style="border-color:#4a9eff" onclick="insertBox('example')"><div class="box-opt-title" style="color:#4a9eff">Example</div><div class="box-opt-sub" style="color:#4a9eff">Ctrl+Alt+E</div></div>
+          <div class="box-opt" style="border-color:#4eca8b" onclick="insertBox('definition')"><div class="box-opt-title" style="color:#4eca8b">Definition</div><div class="box-opt-sub" style="color:#4eca8b">Ctrl+Alt+D</div></div>
+          <div class="box-opt" style="border-color:#a599ff" onclick="insertBox('theorem')"><div class="box-opt-title" style="color:#a599ff">Theorem</div><div class="box-opt-sub" style="color:#a599ff">Ctrl+Alt+W</div></div>
+          <div class="box-opt" style="border-color:#f5b842" onclick="insertBox('warning')"><div class="box-opt-title" style="color:#f5b842">Warning</div><div class="box-opt-sub" style="color:#f5b842">Ctrl+Alt+!</div></div>
+          <div class="box-opt" style="border-color:#e060a0" onclick="insertBox('note')"><div class="box-opt-title" style="color:#e060a0">Note</div><div class="box-opt-sub" style="color:#e060a0">Ctrl+Alt+N</div></div>
+          <div class="box-opt" style="border-color:#38c4be" onclick="insertBox('proof')"><div class="box-opt-title" style="color:#38c4be">Proof</div><div class="box-opt-sub" style="color:#38c4be">Ctrl+Alt+P</div></div>
+          <div class="box-opt" style="border-color:#9090a8" onclick="insertBox('remark')"><div class="box-opt-title" style="color:#9090a8">Remark</div><div class="box-opt-sub" style="color:#9090a8">Ctrl+Alt+R</div></div>
+          <div class="box-opt" style="border-color:#4eca8b" onclick="insertBox('sequence')"><div class="box-opt-title" style="color:#4eca8b">Sequence</div><div class="box-opt-sub" style="color:#4eca8b">Ctrl+Alt+Q</div></div>
+        </div>
+        <div class="modal-actions" style="margin-top:12px"><button class="btn" onclick="closeBox()">Cancel</button></div>
+      </div>
+    </div>
+
+    <div id="toast"></div>
+    <div id="snippet-hint" class="hidden"></div>
+    <div id="scratchpad" class="hidden">
+      <div id="scratchpad-header">
+        <span>scratchpad — not saved</span>
+        <button id="scratchpad-close" onclick="toggleScratchpad()">×</button>
+      </div>
+      <textarea id="scratchpad-area" spellcheck="false" placeholder="Temporary notes, calculations…"></textarea>
+    </div>
+  </div>
+
+  <!-- Preview pane -->
+  <div id="preview-pane">
+    <div id="preview-inner"></div>
+    <div id="exercises-section" class="empty">
+      <div id="exercises-section-title">Exercises</div>
+      <div id="exercises-list"></div>
+    </div>
+    <div id="math-ref">
+      <div class="ref-title">math — $(...)$ inline · $$(...)$$ block · [[#Heading]] anchor · #tag</div>
+      <div class="ref-chips">
+        <span class="chip">(a)/(b)</span><span class="chip">sum(a)(b)</span><span class="chip">int(a)(b)</span>
+        <span class="chip">lim(x->0)</span><span class="chip">sqrt(x)</span><span class="chip">binom(n)(k)</span>
+        <span class="chip">abs(x) norm(x)</span><span class="chip">mat(2x3)</span><span class="chip">cases</span>
+        <span class="chip">inf pi alpha..omega</span><span class="chip">RR ZZ QQ NN CC</span>
+        <span class="chip">-> => neq leq geq</span><span class="chip">forall exists in</span>
+        <span class="chip">:::sequence DNA/RNA/AA</span><span class="chip">graph: A->B->C</span><span class="chip">:::exercise Name / :::solution</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Jump palette -->
+  <div id="jump-palette" class="hidden">
+    <input id="jump-filter" type="text" placeholder="Jump to section…" autocomplete="off" spellcheck="false">
+    <div id="jump-list"></div>
+  </div>
+
+  <!-- Anchor dropdown -->
+  <div id="anchor-dropdown" class="hidden">
+    <input id="anchor-search" type="text" placeholder="heading name…" autocomplete="off" spellcheck="false">
+    <div id="anchor-list"></div>
+    <div id="anchor-hint">↑↓ navigate · Enter confirm · Esc cancel</div>
+  </div>
+
+  <!-- Code picker -->
+  <div id="code-picker" class="hidden">
+    <div id="code-picker-title">insert code block — press key to confirm</div>
+    <div id="code-lang-grid">
+      <div class="lang-opt" data-lang="python"><span class="lang-opt-key">P</span><span class="lang-opt-name">Python</span></div>
+      <div class="lang-opt" data-lang="javascript"><span class="lang-opt-key">J</span><span class="lang-opt-name">JS</span></div>
+      <div class="lang-opt" data-lang="typescript"><span class="lang-opt-key">T</span><span class="lang-opt-name">TS</span></div>
+      <div class="lang-opt" data-lang="rust"><span class="lang-opt-key">R</span><span class="lang-opt-name">Rust</span></div>
+      <div class="lang-opt" data-lang="cpp"><span class="lang-opt-key">C</span><span class="lang-opt-name">C++</span></div>
+      <div class="lang-opt" data-lang="matlab"><span class="lang-opt-key">M</span><span class="lang-opt-name">Matlab</span></div>
+      <div class="lang-opt" data-lang="latex"><span class="lang-opt-key">L</span><span class="lang-opt-name">LaTeX</span></div>
+      <div class="lang-opt" data-lang="bash"><span class="lang-opt-key">B</span><span class="lang-opt-name">Bash</span></div>
+      <div class="lang-opt" data-lang="html"><span class="lang-opt-key">H</span><span class="lang-opt-name">HTML</span></div>
+      <div class="lang-opt" data-lang="sql"><span class="lang-opt-key">S</span><span class="lang-opt-name">SQL</span></div>
+    </div>
+    <div id="code-picker-hint">Esc to cancel</div>
+  </div>
+
+</div>
+
+<!-- Settings overlay (outside #main so it covers everything) -->
+<div id="settings-overlay" class="hidden">
+  <div id="settings-panel">
+    <div id="settings-header">
+      <span id="settings-title">shortcuts</span>
+      <button id="settings-close" onclick="closeSettings()">×</button>
+    </div>
+    <div id="settings-body">
+      <div class="settings-section-title">Ctrl + Alt + key — click a binding to remap</div>
+      <div id="shortcut-list"></div>
+    </div>
+    <div id="settings-footer">
+      <span>Press the new key combination to record · Esc to cancel recording</span>
+      <button id="settings-reset-all" onclick="resetAllShortcuts()">Reset all to defaults</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  LECTURNOTE COMMANDS  — edit this section freely                        ║
+// ║                                                                          ║
+// ║  MATH:      $(...)$  inline    $$(...)$$  display                        ║
+// ║  FRAC:      (a)/(b)                                                      ║
+// ║  SUMS:      sum(sub)(sup)   INT: int(a)(b)   LIM: lim(x->0)             ║
+// ║  ROOTS:     sqrt(x)  sqrt(n)(x)   BINOM: binom(n)(k)                    ║
+// ║  DECO:      vec hat bar tilde  NORM: abs(x) norm(x)                     ║
+// ║  MATRIX:    mat(2x3)   CASES: cases   FLOOR/CEIL: floor(x) ceil(x)      ║
+// ║  BRACES:    obrace(x)(lbl)  ubrace(x)(lbl)  TEXT: text(word)            ║
+// ║  ANCHORS:   [[#Heading]]  or type [[# for autocomplete                  ║
+// ║  TAGS:      #tagname  anywhere in note                                  ║
+// ║  SEQUENCES: :::sequence ... :::   (DNA/RNA/protein)                     ║
+// ║  GRAPHS:    :::graph ... :::   (A -> B, A -- B)                         ║
+// ║  SNIPPETS:  add to SNIPPETS below, expand with Tab                      ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+window.LECTURNOTE_COMMANDS = {
+
+  MATH_FUNCTIONS: [
+    { pattern: /\(([^)]*)\)\/\(([^)]*)\)/g,      replace: (_,n,d) => `\\frac{${n}}{${d}}` },
+    { pattern: /\(([^)]*)\)\//g,                  replace: (_,n)   => `{${n}}^{\\uparrow}` },
+    { pattern: /\bsum\(([^)]*)\)\(([^)]*)\)/g,    replace: (_,s,u) => `\\sum_{${_arg(s)}}^{${_arg(u)}}` },
+    { pattern: /\bsum\(([^)]*)\)/g,               replace: (_,s)   => `\\sum_{${_arg(s)}}` },
+    { pattern: /\bsum\b(?!\()/g,                  replace: ()      => `\\sum` },
+    { pattern: /\bint\(([^)]*)\)\(([^)]*)\)/g,    replace: (_,a,b) => `\\int_{${_arg(a)}}^{${_arg(b)}}` },
+    { pattern: /\bint\(([^)]*)\)/g,               replace: (_,s)   => `\\int_{${_arg(s)}}` },
+    { pattern: /\bint\b(?!\()/g,                  replace: ()      => `\\int` },
+    { pattern: /\blim\(([^)]*)\)/g,               replace: (_,s)   => `\\lim_{${_arg(s)}}` },
+    { pattern: /\blim\b(?!\()/g,                  replace: ()      => `\\lim` },
+    { pattern: /\bprod\(([^)]*)\)\(([^)]*)\)/g,   replace: (_,a,b) => `\\prod_{${_arg(a)}}^{${_arg(b)}}` },
+    { pattern: /\bprod\(([^)]*)\)/g,              replace: (_,s)   => `\\prod_{${_arg(s)}}` },
+    { pattern: /\bsqrt\(([^)]*)\)\(([^)]*)\)/g,   replace: (_,n,x) => `\\sqrt[${n}]{${x}}` },
+    { pattern: /\bsqrt\(([^)]*)\)/g,              replace: (_,x)   => `\\sqrt{${x}}` },
+    { pattern: /\babs\(([^)]*)\)/g,               replace: (_,x)   => `\\left|${x}\\right|` },
+    { pattern: /\bnorm\(([^)]*)\)/g,              replace: (_,x)   => `\\left\\|${x}\\right\\|` },
+    { pattern: /\bvec\(([^)]*)\)/g,               replace: (_,x)   => `\\vec{${x}}` },
+    { pattern: /\bhat\(([^)]*)\)/g,               replace: (_,x)   => `\\hat{${x}}` },
+    { pattern: /\bbar\(([^)]*)\)/g,               replace: (_,x)   => `\\bar{${x}}` },
+    { pattern: /\btilde\(([^)]*)\)/g,             replace: (_,x)   => `\\tilde{${x}}` },
+    { pattern: /\bbinom\(([^)]*)\)\(([^)]*)\)/g,  replace: (_,n,k) => `\\binom{${n}}{${k}}` },
+    { pattern: /\bmat\((\d+)x(\d+)\)\[([^\]]*)\]/g,  replace: (_,r,c,vals) => _buildMatrixFilled(+r,+c,vals) },
+    { pattern: /\bmat\((\d+)x(\d+)\)/g,               replace: (_,r,c)      => _buildMatrix(+r,+c) },
+    { pattern: /\bcases\b/g,                       replace: ()      => `\\begin{cases} f_1 & \\text{if } c_1 \\\\ f_2 & \\text{if } c_2 \\end{cases}` },
+    { pattern: /\bfloor\(([^)]*)\)/g,             replace: (_,x)   => `\\lfloor ${x} \\rfloor` },
+    { pattern: /\bceil\(([^)]*)\)/g,              replace: (_,x)   => `\\lceil ${x} \\rceil` },
+    { pattern: /\btext\(([^)]*)\)/g,              replace: (_,x)   => `\\text{${x}}` },
+    { pattern: /\bover\(([^)]*)\)/g,              replace: (_,x)   => `\\overline{${x}}` },
+    { pattern: /\bunder\(([^)]*)\)/g,             replace: (_,x)   => `\\underline{${x}}` },
+    { pattern: /\bobrace\(([^)]*)\)\(([^)]*)\)/g, replace: (_,x,l) => `\\overbrace{${x}}^{\\text{${l}}}` },
+    { pattern: /\bubrace\(([^)]*)\)\(([^)]*)\)/g, replace: (_,x,l) => `\\underbrace{${x}}_{\\text{${l}}}` },
+  ],
+
+  MATH_SYMBOLS: {
+    'alpha':'\\alpha','beta':'\\beta','gamma':'\\gamma','delta':'\\delta',
+    'epsilon':'\\epsilon','varepsilon':'\\varepsilon','zeta':'\\zeta',
+    'eta':'\\eta','theta':'\\theta','vartheta':'\\vartheta','iota':'\\iota',
+    'kappa':'\\kappa','lambda':'\\lambda','mu':'\\mu','nu':'\\nu',
+    'xi':'\\xi','pi':'\\pi','varpi':'\\varpi','rho':'\\rho','varrho':'\\varrho',
+    'sigma':'\\sigma','varsigma':'\\varsigma','tau':'\\tau',
+    'upsilon':'\\upsilon','phi':'\\phi','varphi':'\\varphi',
+    'chi':'\\chi','psi':'\\psi','omega':'\\omega',
+    'Gamma':'\\Gamma','Delta':'\\Delta','Theta':'\\Theta','Lambda':'\\Lambda',
+    'Xi':'\\Xi','Pi':'\\Pi','Sigma':'\\Sigma','Upsilon':'\\Upsilon',
+    'Phi':'\\Phi','Psi':'\\Psi','Omega':'\\Omega',
+    'RR':'\\mathbb{R}','ZZ':'\\mathbb{Z}','QQ':'\\mathbb{Q}',
+    'NN':'\\mathbb{N}','CC':'\\mathbb{C}','FF':'\\mathbb{F}',
+    'inf':'\\infty','nabla':'\\nabla','partial':'\\partial',
+    'forall':'\\forall','exists':'\\exists','nexists':'\\nexists',
+    'implies':'\\Rightarrow','iff':'\\Leftrightarrow',
+    'not':'\\neg','and':'\\land','or':'\\lor',
+    'in':'\\in','notin':'\\notin','subset':'\\subset','supset':'\\supset',
+    'subseteq':'\\subseteq','supseteq':'\\supseteq',
+    'cup':'\\cup','cap':'\\cap','emptyset':'\\emptyset','setminus':'\\setminus',
+    'pm':'\\pm','mp':'\\mp','xx':'\\times','cdot':'\\cdot',
+    'circ':'\\circ','div':'\\div','oplus':'\\oplus','otimes':'\\otimes','oslash':'\\oslash',
+    'neq':'\\neq','approx':'\\approx','equiv':'\\equiv',
+    'll':'\\ll','gg':'\\gg','leq':'\\leq','geq':'\\geq',
+    '>=':'\\geq','<=':'\\leq','!=':'\\neq',
+    'sim':'\\sim','simeq':'\\simeq','cong':'\\cong','propto':'\\propto',
+    '->':'\\to','<-':'\\leftarrow','=>':'\\Rightarrow',
+    '<=>':'\\Leftrightarrow','~>':'\\leadsto',
+    'uparrow':'\\uparrow','downarrow':'\\downarrow',
+    'dots':'\\ldots','ldots':'\\ldots','cdots':'\\cdots',
+    'vdots':'\\vdots','ddots':'\\ddots',
+    'deg':'\\degree','prime':'\\prime','star':'\\star','dagger':'\\dagger',
+  },
+
+  // ── Snippet expander ──────────────────────────────────────────────────────
+  // Type the key, press Tab to expand.
+  // Use \n for newlines, \t for tab stops (cursor placed at first \t).
+  // Add your own subject-specific snippets here!
+  SNIPPETS: {
+    // Biology / Bioinformatics
+    'pcr':    '**PCR Protocol**\n- Template: \n- Primers: F: `5\'-\'-3\'`  R: `5\'-\'-3\'`\n- Annealing temp: °C\n- Extension time: s\n- Cycles: ',
+    'seq':    ':::sequence\nDNA\n\n:::',
+    'fasta':  '>sequence_id description\nATGCATGCATGC',
+    'align':  '```\nSeq1: ATGCATGC--ATGC\nSeq2: ATGC--GCGGATGC\n      |||| || |||||\n```',
+    'phylo':  ':::graph TD\nroot: Root\na: Node A\nb: Node B\nleaf1: Leaf 1\nleaf2: Leaf 2\nroot -> a\nroot -> b\na -> leaf1\nb -> leaf2\n:::',
+    'smith':  '**Smith-Waterman**\n- Match: +\n- Mismatch: -\n- Gap open: -\n- Gap extend: -',
+    'blast':  '**BLAST parameters**\n- E-value: \n- Word size: \n- Matrix: BLOSUM62\n- Gap costs: ',
+    // Math
+    'pf':     ':::proof\n**Proof.** \n\n$\\square$\n:::',
+    'thm':    ':::theorem\n**Theorem.** \n:::',
+    'def':    ':::definition\n**Definition.** \n:::',
+    'matrix': '$$(mat(2x2))$$',
+    'cases':  '$$(cases)$$',
+    // General
+    'todo':   '- [ ] ',
+    'date':   '', // filled dynamically
+  },
+
+  AUTOCORRECT: {
+    'teh':'the','adn':'and','hte':'the','waht':'what','taht':'that',
+    'recieve':'receive','occured':'occurred','seperate':'separate',
+    'definately':'definitely','becuase':'because','truely':'truly',
+    'wiht':'with','dont':"don't",'doesnt':"doesn't",
+    'isnt':"isn't",'wasnt':"wasn't",'hasnt':"hasn't",
+    'wouldnt':"wouldn't",'couldnt':"couldn't",'shouldnt':"shouldn't",
+    'im':"I'm",'ive':"I've",'id':"I'd",'ill':"I'll",
+    'therfore':'therefore','therefor':'therefore','alot':'a lot',
+    'aswell':'as well','infact':'in fact',
+    'untill':'until','accomodate':'accommodate','acheive':'achieve',
+    'aquire':'acquire','arguement':'argument','beleive':'believe',
+    'calender':'calendar','collegue':'colleague',
+    'concieve':'conceive','consious':'conscious',
+    'embarass':'embarrass','existance':'existence','experiance':'experience',
+    'familar':'familiar','finaly':'finally','foriegn':'foreign',
+    'goverment':'government','grammer':'grammar','gratefull':'grateful',
+    'ignorence':'ignorance','immeditaly':'immediately',
+    'independance':'independence','indispensible':'indispensable',
+    'inteligent':'intelligent','intresting':'interesting',
+    'irresistable':'irresistible','knowlege':'knowledge',
+    'mispell':'misspell','neccessary':'necessary',
+    'nieghbor':'neighbor','ocasion':'occasion','occurence':'occurrence',
+    'personel':'personnel','posession':'possession','prefered':'preferred',
+    'privelege':'privilege','profesional':'professional',
+    'pronounciation':'pronunciation','recomend':'recommend',
+    'relevent':'relevant','remeber':'remember','repitition':'repetition',
+    'resistence':'resistance','responsability':'responsibility',
+    'rythm':'rhythm','sieze':'seize','succesful':'successful',
+    'suprise':'surprise','tommorow':'tomorrow','tounge':'tongue',
+    'twelth':'twelfth','tyrany':'tyranny','vaccum':'vacuum',
+    'visable':'visible','wierd':'weird','writting':'writing',
+    'defintion':'definition','theroem':'theorem','corolary':'corollary',
+    'propositon':'proposition','equivelent':'equivalent',
+    'continous':'continuous','integeral':'integral',
+    'derrivative':'derivative','funciton':'function',
+    'matirx':'matrix','detereminant':'determinant',
+    'probablity':'probability','distribtuion':'distribution',
+    'hypthesis':'hypothesis','analyisis':'analysis',
+    'algorithmn':'algorithm','complexitiy':'complexity',
+  },
+};
+
+// ── Internal math helpers ──────────────────────────────────────────────────
+function _arg(s) {
+  s = s.trim().replace(/->/g,'\\to').replace(/=>/g,'\\Rightarrow');
+  return _applySymbols(s);
+}
+function _buildMatrix(r,c) {
+  return `\\begin{pmatrix}${Array(r).fill(null).map(()=>Array(c).fill('\\cdot').join(' & ')).join('\\\\')}\\end{pmatrix}`;
+}
+function _buildMatrixFilled(r, c, valStr) {
+  // Parse comma-separated values, trim whitespace, pad/truncate to r*c
+  const vals = valStr.split(',').map(v => v.trim());
+  while (vals.length < r * c) vals.push('\\cdot'); // pad missing with dots
+  const rows = [];
+  for (let i = 0; i < r; i++) {
+    rows.push(vals.slice(i * c, i * c + c).join(' & '));
+  }
+  return `\\begin{pmatrix}${rows.join('\\\\')}\\end{pmatrix}`;
+}
+
+// ── State ──────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'lecturnote_notes';
+const ACTIVE_KEY  = 'lecturnote_active';
+let notes = {};
+let activeId = null;
+let tableData = []; // visual table editor state
+let sidebarOpen = false;
+let activeTagFilter = null;
+
+const editor       = document.getElementById('editor');
+const previewInner = document.getElementById('preview-inner');
+const tableOverlay = document.getElementById('table-overlay');
+const boxOverlay   = document.getElementById('box-overlay');
+const jumpPalette  = document.getElementById('jump-palette');
+const jumpFilter   = document.getElementById('jump-filter');
+const jumpList     = document.getElementById('jump-list');
+const noteName     = document.getElementById('note-name');
+const notesList    = document.getElementById('notes-list');
+const toastEl      = document.getElementById('toast');
+const anchorDropdown = document.getElementById('anchor-dropdown');
+const anchorSearch   = document.getElementById('anchor-search');
+const anchorListEl   = document.getElementById('anchor-list');
+const snippetHint    = document.getElementById('snippet-hint');
+const scratchpad     = document.getElementById('scratchpad');
+
+// ── Note persistence ───────────────────────────────────────────────────────
+function saveNotes() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+  localStorage.setItem(ACTIVE_KEY, activeId);
+}
+function loadNotes() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  notes = raw ? JSON.parse(raw) : {};
+  activeId = localStorage.getItem(ACTIVE_KEY);
+  if (!activeId || !notes[activeId]) {
+    if (Object.keys(notes).length === 0) newNote(true);
+    else activeId = Object.keys(notes)[0];
+  }
+  loadActiveNote();
+  renderNotesList();
+}
+function newNote(silent) {
+  const id = 'note_' + Date.now();
+  notes[id] = { name:'Untitled note', content: DEFAULT_CONTENT, updated: Date.now(), tags:[] };
+  activeId = id;
+  saveNotes();
+  // Set editor value explicitly before render so preview updates immediately
+  editor.value = DEFAULT_CONTENT;
+  noteName.value = 'Untitled note';
+  render();
+  renderNotesList();
+  if (!silent) { noteName.focus(); noteName.select(); }
+}
+function loadActiveNote() {
+  const n = notes[activeId];
+  if (!n) return;
+  editor.value = n.content;
+  noteName.value = n.name;
+  render();
+}
+function switchNote(id) {
+  saveCurrentNote();
+  activeId = id;
+  loadActiveNote();
+  renderNotesList();
+  if (sidebarOpen) toggleSidebar();
+}
+function saveCurrentNote() {
+  if (!activeId || !notes[activeId]) return;
+  notes[activeId].content = editor.value;
+  notes[activeId].name = noteName.value;
+  notes[activeId].updated = Date.now();
+  notes[activeId].tags = extractTags(editor.value);
+  saveNotes();
+}
+function deleteNote(id) {
+  if (Object.keys(notes).length <= 1) { showToast('Cannot delete last note'); return; }
+  delete notes[id];
+  if (activeId === id) { activeId = Object.keys(notes)[0]; loadActiveNote(); }
+  // Clear tag filter if the deleted note was the only one with that tag
+  if (activeTagFilter) {
+    const tagStillExists = Object.values(notes).some(n => (n.tags||[]).includes(activeTagFilter));
+    if (!tagStillExists) activeTagFilter = null;
+  }
+  saveNotes(); renderNotesList();
+}
+function extractTags(content) {
+  // Tags are only recognised on the second non-empty line of the note
+  // (the line immediately after the # Title line).
+  // Heading lines (##, ###, ####) are never treated as tags.
+  const lines = content.split('\n');
+  // Find the first line that is a # heading
+  let titleLineIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].match(/^#\s+\S/)) { titleLineIdx = i; break; }
+  }
+  if (titleLineIdx === -1) return [];
+  // Find the very next non-empty line after the title
+  let tagLineIdx = -1;
+  for (let i = titleLineIdx + 1; i < lines.length; i++) {
+    if (lines[i].trim() !== '') { tagLineIdx = i; break; }
+  }
+  if (tagLineIdx === -1) return [];
+  const tagLine = lines[tagLineIdx];
+  // The tag line must consist ONLY of #tags and spaces — not a heading (##) or prose
+  if (tagLine.match(/^#{2,}/)) return []; // it's a subheading, not tags
+  if (!tagLine.match(/^(\s*#[a-zA-Z][a-zA-Z0-9_-]*)+\s*$/)) return []; // not a pure tag line
+  const matches = tagLine.match(/#([a-zA-Z][a-zA-Z0-9_-]*)/g) || [];
+  return [...new Set(matches.map(t => t.slice(1)))];
+}
+function renderNotesList() {
+  // collect all tags across all notes
+  const allTags = new Set();
+  Object.values(notes).forEach(n => (n.tags||[]).forEach(t => allTags.add(t)));
+  const tagsEl = document.getElementById('sidebar-tags');
+  tagsEl.innerHTML = [...allTags].map(t =>
+    `<span class="tag-filter-chip ${activeTagFilter===t?'active':''}" data-tag="${escHtml(t)}">#${escHtml(t)}</span>`
+  ).join('');
+  tagsEl.querySelectorAll('.tag-filter-chip').forEach(el => {
+    el.addEventListener('click', () => {
+      activeTagFilter = activeTagFilter === el.dataset.tag ? null : el.dataset.tag;
+      renderNotesList();
+    });
+  });
+
+  const ids = Object.keys(notes)
+    .filter(id => !activeTagFilter || (notes[id].tags||[]).includes(activeTagFilter))
+    .sort((a,b) => notes[b].updated - notes[a].updated);
+
+  notesList.innerHTML = ids.map(id => {
+    const n = notes[id];
+    const d = new Date(n.updated);
+    const dateStr = d.toLocaleDateString(undefined,{month:'short',day:'numeric'});
+    return `<div class="note-item ${id===activeId?'active':''}" data-id="${id}">
+      <span class="note-item-name">${escHtml(n.name)}</span>
+      <span class="note-item-date">${dateStr}</span>
+      <button class="note-delete-btn" data-del="${id}" title="Delete">×</button>
+    </div>`;
+  }).join('');
+  notesList.querySelectorAll('.note-item').forEach(el => {
+    el.addEventListener('click', e => {
+      if (e.target.dataset.del) { deleteNote(e.target.dataset.del); return; }
+      switchNote(el.dataset.id);
+    });
+  });
+}
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+noteName.addEventListener('input', () => { if (notes[activeId]) notes[activeId].name = noteName.value; saveNotes(); renderNotesList(); });
+
+// ── Sequence block renderer ────────────────────────────────────────────────
+const DNA_BASES_DNA = { A:'b-A', T:'b-T', G:'b-G', C:'b-C', N:'b-N' };
+const DNA_BASES_RNA = { A:'b-A', U:'b-U', G:'b-G', C:'b-C', N:'b-N' };
+const HYDROPHOBIC = new Set(['A','V','I','L','M','F','W','P']);
+const POLAR       = new Set(['S','T','N','Q','C','Y']);
+const CHARGED_POS = new Set(['K','R','H']);
+const CHARGED_NEG = new Set(['D','E']);
+const SPECIAL     = new Set(['G']);
+
+function colorBase(ch, mode) {
+  const up = ch.toUpperCase();
+  if (mode === 'AA') {
+    let cls = 'b-N';
+    if (HYDROPHOBIC.has(up)) cls='b-hydrophobic';
+    else if (POLAR.has(up))  cls='b-polar';
+    else if (CHARGED_POS.has(up)) cls='b-charged-pos';
+    else if (CHARGED_NEG.has(up)) cls='b-charged-neg';
+    else if (SPECIAL.has(up))     cls='b-special';
+    return `<span class="${cls}">${ch}</span>`;
+  }
+  if (mode === 'RNA') {
+    const cls = DNA_BASES_RNA[up] || 'b-N';
+    return `<span class="${cls}">${ch}</span>`;
+  }
+  // DNA mode (default)
+  const cls = DNA_BASES_DNA[up] || 'b-N';
+  return `<span class="${cls}">${ch}</span>`;
+}
+
+function renderSeqBlock(content) {
+  const lines = content.trim().split('\n');
+  // first line is type: DNA | RNA | AA | (blank = DNA)
+  let mode = 'DNA', body = lines;
+  const first = lines[0].trim().toUpperCase();
+  if (['DNA','RNA','AA','PROTEIN'].includes(first)) { mode = first === 'PROTEIN' ? 'AA' : first; body = lines.slice(1); }
+
+  const rendered = body.map(line => {
+    if (line.startsWith('>')) return `<span class="seq-header">${escHtml(line)}</span>`;
+    if (!line.trim()) return '';
+    return line.split('').map(ch => colorBase(ch, mode)).join('');
+  }).filter(l => l !== '').join('\n');
+
+  const modeLabel = mode === 'AA' ? 'Amino Acids' : mode;
+  return `<div class="seq-block"><span class="seq-label">${modeLabel} sequence</span>${rendered}</div>`;
+}
+
+// ── Graph / diagram renderer (simple text → mermaid-like SVG via inline) ──
+// ── Graph renderer — Sugiyama layout via dagre ────────────────────────────
+// Syntax inside :::graph DIR ... :::
+//   Node declaration:  id: Label text
+//   Edge types:        a -> b           simple directed arrow
+//                      a --> b          bold directed arrow
+//                      a -- b           undirected line
+//                      a -.-> b         dashed arrow
+//   Edge with label:   a -> b : some label
+//   Implicit nodes:    if id used in edge without declaration, label = id
+
+function renderGraphBlock(content, direction) {
+  if (!window.dagre) {
+    return `<div class="mermaid-wrap" style="color:var(--coral);font-size:12px;padding:12px">dagre not loaded yet — reload the app</div>`;
+  }
+
+  const dir = direction || 'LR';
+  const lines = content.trim().split('\n').filter(l => l.trim());
+
+  // ── Parse ──────────────────────────────────────────────────────────────
+  const nodeLabels = {};  // id → display label
+  const edges = [];       // {from, to, type, label}
+
+  // Edge pattern: from  ->|-->|-.->.|--.  to  (: label)?
+  const EDGE_RE = /^\s*([A-Za-z0-9_]+)\s*(-->\s|->|--|-\.->)\s*([A-Za-z0-9_]+)\s*(?::\s*(.+))?\s*$/;
+  // Node declaration: id: Label text
+  const NODE_RE = /^\s*([A-Za-z0-9_]+)\s*:\s*(.+)$/;
+
+  for (const line of lines) {
+    const em = line.match(EDGE_RE);
+    if (em) {
+      const [, from, rawType, to, label] = em;
+      const type = rawType.trim();
+      edges.push({ from, to, type, label: label ? label.trim() : null });
+      // Auto-declare implicit nodes
+      if (!(from in nodeLabels)) nodeLabels[from] = from;
+      if (!(to   in nodeLabels)) nodeLabels[to]   = to;
+      continue;
+    }
+    const nm = line.match(NODE_RE);
+    if (nm) {
+      nodeLabels[nm[1].trim()] = nm[2].trim();
+    }
+  }
+
+  if (Object.keys(nodeLabels).length === 0) {
+    return `<div class="mermaid-wrap" style="color:var(--text3);font-size:12px;padding:12px">Empty graph</div>`;
+  }
+
+  // ── Dagre layout ──────────────────────────────────────────────────────
+  const NODE_W = 140, NODE_H = 40, NODE_PAD = 14;
+  const g = new dagre.graphlib.Graph({ multigraph: true });
+  g.setGraph({
+    rankdir: dir,
+    nodesep: 50,
+    ranksep: 60,
+    marginx: 20,
+    marginy: 20,
+  });
+  g.setDefaultEdgeLabel(() => ({}));
+
+  // Measure text width roughly (char width ≈ 7px at 11px mono)
+  const nodeWidth  = id => Math.max(NODE_W, nodeLabels[id].length * 8 + NODE_PAD * 2);
+  const nodeHeight = () => NODE_H + 6;
+
+  for (const id of Object.keys(nodeLabels)) {
+    g.setNode(id, { width: nodeWidth(id), height: nodeHeight() });
+  }
+  edges.forEach((e, i) => {
+    g.setEdge(e.from, e.to, { label: e.label || '' }, `e${i}`);
+  });
+
+  dagre.layout(g);
+
+  const gw = g.graph().width  + 40;
+  const gh = g.graph().height + 40;
+
+  // ── SVG colours ───────────────────────────────────────────────────────
+  const C = {
+    nodeFill:    '#1e1e28',
+    nodeStroke:  '#3a3a50',
+    nodeText:    '#e8e8f0',
+    edgeDefault: '#7c6af7',
+    edgeBold:    '#a599ff',
+    edgeDashed:  '#9090a8',
+    edgeNeutral: '#5a5a72',
+    labelBg:     '#16161d',
+    labelText:   '#9090a8',
+  };
+
+  // ── Build defs ────────────────────────────────────────────────────────
+  const mkMarker = (id, color, size=8) =>
+    `<marker id="${id}" markerWidth="${size}" markerHeight="${size}" refX="${size-2}" refY="${size/2}" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,${size} L${size},${size/2} z" fill="${color}"/>
+    </marker>`;
+
+  const defs = `<defs>
+    ${mkMarker('arr-default', C.edgeDefault)}
+    ${mkMarker('arr-bold',    C.edgeBold, 9)}
+    ${mkMarker('arr-dashed',  C.edgeDashed)}
+  </defs>`;
+
+  // ── Render nodes ──────────────────────────────────────────────────────
+  const nodesSVG = Object.keys(nodeLabels).map(id => {
+    const n = g.node(id);
+    if (!n) return '';
+    const x = n.x - n.width/2, y = n.y - n.height/2;
+    const label = nodeLabels[id];
+    // Wrap long labels
+    const words = label.split(' ');
+    let lines_ = [], cur = '';
+    for (const w of words) {
+      if ((cur + ' ' + w).trim().length * 7 > n.width - NODE_PAD*2) {
+        if (cur) lines_.push(cur);
+        cur = w;
+      } else {
+        cur = cur ? cur + ' ' + w : w;
+      }
+    }
+    if (cur) lines_.push(cur);
+    const lineH = 16, totalTextH = lines_.length * lineH;
+    const textY = n.y - totalTextH/2 + lineH * 0.75;
+    const textEls = lines_.map((l, i) =>
+      `<text x="${n.x}" y="${textY + i*lineH}" text-anchor="middle" dominant-baseline="auto"
+        font-family="JetBrains Mono,monospace" font-size="13" fill="${C.nodeText}">${escHtml(l)}</text>`
+    ).join('');
+    return `<g class="graph-node">
+      <rect x="${x}" y="${y}" width="${n.width}" height="${n.height}" rx="7"
+        fill="${C.nodeFill}" stroke="${C.nodeStroke}" stroke-width="1.5"/>
+      ${textEls}
+    </g>`;
+  }).join('');
+
+  // ── Render edges ──────────────────────────────────────────────────────
+  const edgesSVG = edges.map((e, i) => {
+    const pts = g.edge(e.from, e.to, `e${i}`)?.points;
+    if (!pts || pts.length < 2) return '';
+
+    const isDashed  = e.type === '.->';
+    const isBold    = e.type === '-->';
+    const isNeutral = e.type === '--';
+    const color     = isBold ? C.edgeBold : isDashed ? C.edgeDashed : isNeutral ? C.edgeNeutral : C.edgeDefault;
+    const marker    = isNeutral ? '' : isBold ? 'url(#arr-bold)' : isDashed ? 'url(#arr-dashed)' : 'url(#arr-default)';
+    const strokeW   = isBold ? 2.5 : 1.5;
+    const dash      = isDashed ? '6 3' : '';
+
+    // Smooth polyline through dagre points
+    const d = pts.map((p,j) => `${j===0?'M':'L'}${p.x},${p.y}`).join(' ');
+
+    let labelSVG = '';
+    if (e.label) {
+      const mid = pts[Math.floor(pts.length / 2)];
+      const lw = e.label.length * 7.5 + 12;
+      labelSVG = `<rect x="${mid.x - lw/2}" y="${mid.y - 10}" width="${lw}" height="18" rx="3" fill="${C.labelBg}" opacity="0.9"/>
+        <text x="${mid.x}" y="${mid.y + 4}" text-anchor="middle"
+          font-family="JetBrains Mono,monospace" font-size="11" fill="${C.labelText}">${escHtml(e.label)}</text>`;
+    }
+
+    return `<g>
+      <path d="${d}" fill="none" stroke="${color}" stroke-width="${strokeW}"
+        stroke-dasharray="${dash}" ${marker ? `marker-end="${marker}"` : ''}/>
+      ${labelSVG}
+    </g>`;
+  }).join('');
+
+  const dirLabel = dir;
+  return `<div class="mermaid-wrap">
+    <div style="font-size:9px;color:var(--text3);text-align:right;margin-bottom:4px;font-family:var(--mono)">${dirLabel}</div>
+    <svg width="${gw}" height="${gh}" viewBox="0 0 ${gw} ${gh}" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;display:block">
+      ${defs}
+      ${edgesSVG}
+      ${nodesSVG}
+    </svg>
+  </div>`;
+}
+
+// ── Box types ──────────────────────────────────────────────────────────────
+const BOX_TYPES = {
+  example:    { label:'Example',    cls:'box-example'    },
+  definition: { label:'Definition', cls:'box-definition' },
+  theorem:    { label:'Theorem',    cls:'box-theorem'    },
+  warning:    { label:'Warning',    cls:'box-warning'    },
+  note:       { label:'Note',       cls:'box-note'       },
+  proof:      { label:'Proof',      cls:'box-proof'      },
+  remark:     { label:'Remark',     cls:'box-remark'     },
+  sequence:   { label:'Sequence',   cls:''               },
+  graph:      { label:'Graph',      cls:''               },
+};
+
+// ── Exercise system ────────────────────────────────────────────────────────
+// Exercises are parsed BEFORE markdown so we control the output HTML fully.
+// Syntax:
+//   :::exercise My exercise name
+//   Problem text (markdown)
+//   :::solution
+//   Solution text (markdown)
+//   :::
+
+let pendingExercises = [];
+
+// Scan markdown line by line and extract :::exercise...:::solution...:::
+// blocks, replacing them with a safe placeholder token that survives marked.
+function extractExercises(md) {
+  pendingExercises = [];
+  const lines = md.split('\n');
+  const out = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    const exMatch = line.match(/^:::exercise\s*(.*)/);
+    if (exMatch) {
+      const name = exMatch[1].trim() || ('Exercise ' + (pendingExercises.length + 1));
+      const problemLines = [];
+      const solutionLines = [];
+      let inSolution = false;
+      i++;
+      // Collect until closing :::
+      while (i < lines.length) {
+        const l = lines[i];
+        if (l.trim() === ':::') break;
+        if (l.trim() === ':::solution') { inSolution = true; i++; continue; }
+        if (inSolution) solutionLines.push(l);
+        else problemLines.push(l);
+        i++;
+      }
+      const num = pendingExercises.length + 1;
+      const id  = 'ex-' + num;
+      pendingExercises.push({
+        id, num, name,
+        problem:  problemLines.join('\n').trim(),
+        solution: solutionLines.length ? solutionLines.join('\n').trim() : null,
+      });
+      // Emit a placeholder that marked won't mangle
+      out.push(`EXERCISEREF_${id}_END`);
+      i++; // skip closing :::
+      continue;
+    }
+    out.push(line);
+    i++;
+  }
+  return out.join('\n');
+}
+
+// After marked runs, replace placeholder tokens with the reference chips
+function injectExerciseRefs(html) {
+  return html.replace(/EXERCISEREF_(ex-\d+)_END/g, (_, id) => {
+    const ex = pendingExercises.find(e => e.id === id);
+    if (!ex) return '';
+    return `<span class="exercise-ref" data-exid="${id}">◆ Exercise ${ex.num} · ${escHtml(ex.name)} <span class="exercise-ref-arrow">↓</span></span>`;
+  });
+}
+
+function renderExercisesSection() {
+  const section = document.getElementById('exercises-section');
+  const list    = document.getElementById('exercises-list');
+
+  if (pendingExercises.length === 0) {
+    section.classList.add('empty');
+    list.innerHTML = '';
+    return;
+  }
+  section.classList.remove('empty');
+
+  list.innerHTML = pendingExercises.map(ex => {
+    const problemHtml  = processMath(processAnchors(marked.parse(ex.problem || '')));
+    const solutionHtml = ex.solution
+      ? processMath(processAnchors(marked.parse(ex.solution)))
+      : null;
+    return `<div class="exercise-card" id="${ex.id}">
+      <div class="exercise-card-header">
+        <span class="exercise-card-num">Exercise ${ex.num}</span>
+        <span class="exercise-card-name">${escHtml(ex.name)}</span>
+      </div>
+      <div class="exercise-card-body">${problemHtml}</div>
+      ${solutionHtml ? `<button class="solution-toggle" data-target="${ex.id}-sol">
+        <span class="solution-toggle-arrow">▶</span><span class="solution-toggle-label"> Show solution</span>
+      </button>
+      <div class="solution-body hidden" id="${ex.id}-sol">${solutionHtml}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  // Wire toggle buttons (using data attribute instead of inline onclick)
+  list.querySelectorAll('.solution-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const body = document.getElementById(btn.dataset.target);
+      if (!body) return;
+      const opening = body.classList.contains('hidden');
+      body.classList.toggle('hidden', !opening);
+      btn.classList.toggle('open', opening);
+      btn.querySelector('.solution-toggle-label').textContent = opening ? ' Hide solution' : ' Show solution';
+    });
+  });
+
+  // Wire reference chips in preview to scroll to exercise cards
+  document.querySelectorAll('.exercise-ref[data-exid]').forEach(chip => {
+    chip.style.cursor = 'pointer';
+    chip.addEventListener('click', () => scrollToExercise(chip.dataset.exid));
+  });
+}
+
+function scrollToExercise(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  el.style.outline = '2px solid var(--amber)';
+  setTimeout(() => el.style.outline = '', 1200);
+}
+
+function insertExercise() {
+  const text = ':::exercise Exercise name\nProblem statement here.\n:::solution\nSolution here.\n:::\n';
+  const nameStart = text.indexOf('Exercise name');
+  insertAtCursor('\n' + text, nameStart + 1, nameStart + 1 + 'Exercise name'.length);
+  showToast('Exercise inserted — Tab to jump between fields');
+}
+
+// ── parseBoxes — runs AFTER extractExercises, BEFORE marked ───────────────
+// Pre-extracts sequence, graph, and box blocks using placeholder tokens
+// so marked never touches the rendered HTML.
+let pendingBlocks = []; // {token, html}
+
+function parseBoxes(md) {
+  pendingBlocks = [];
+  const lines = md.split('\n');
+  const out = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const seqMatch   = lines[i].match(/^:::sequence\s*$/);
+    const graphMatch = lines[i].match(/^:::graph(?:\s+(LR|TD|RL|BT))?\s*$/i);
+    const boxMatch   = lines[i].match(/^:::(\w+)(?:\s|$)/);
+
+    if (seqMatch || graphMatch) {
+      const body = [];
+      i++;
+      while (i < lines.length && lines[i].trim() !== ':::') {
+        body.push(lines[i]); i++;
+      }
+      i++; // skip closing :::
+      const rendered = seqMatch
+        ? renderSeqBlock(body.join('\n'))
+        : renderGraphBlock(body.join('\n'), graphMatch[1] ? graphMatch[1].toUpperCase() : 'LR');
+      const token = `HTMLBLOCK_${pendingBlocks.length}_END`;
+      pendingBlocks.push({ token, html: rendered });
+      out.push('\n' + token + '\n');
+      continue;
+    }
+
+    // Standard :::type ... ::: boxes
+    if (boxMatch) {
+      const type = boxMatch[1];
+      const bt = BOX_TYPES[type];
+      if (bt) {
+        const body = [];
+        i++;
+        while (i < lines.length && lines[i].trim() !== ':::') {
+          body.push(lines[i]); i++;
+        }
+        i++; // skip closing :::
+        const inner = marked.parse(body.join('\n').trim());
+        const rendered = `<div class="note-box ${bt.cls}"><div class="box-label">${bt.label}</div>${inner}</div>`;
+        const token = `HTMLBLOCK_${pendingBlocks.length}_END`;
+        pendingBlocks.push({ token, html: rendered });
+        out.push('\n' + token + '\n');
+        continue;
+      }
+    }
+
+    out.push(lines[i]);
+    i++;
+  }
+  return out.join('\n');
+}
+
+function injectBlocks(html) {
+  for (const { token, html: blockHtml } of pendingBlocks) {
+    html = stripPWrapper(html, token);
+    html = html.replace(new RegExp(token, 'g'), blockHtml);
+  }
+  return html;
+}
+
+function injectAllCodeBlocks(html) {
+  // First strip any p-wrappers around code tokens
+  for (let i = 0; i < pendingCode.length; i++) {
+    html = stripPWrapper(html, `CODEBLOCK_${i}_END`);
+  }
+  return injectCodeBlocks(html);
+}
+
+// ── Tags in text ───────────────────────────────────────────────────────────
+function processTags(html) {
+  // Only highlight #tags that appear on a pure tag line (no ##heading lines).
+  // We work line by line on the HTML to avoid matching inside headings.
+  return html.split('\n').map(line => {
+    // Skip lines that are heading tags <h1-6 or contain heading markup
+    if (line.match(/<h[1-6][\s>]/i)) return line;
+    // Only highlight on lines that are pure tag lines (just #word tokens)
+    // We check the text content loosely: if the line (stripped of HTML tags) is only #words
+    const textOnly = line.replace(/<[^>]+>/g, '').trim();
+    if (!textOnly.match(/^(#[a-zA-Z][a-zA-Z0-9_-]*\s*)+$/)) return line;
+    return line.replace(/#([a-zA-Z][a-zA-Z0-9_-]*)/g,
+      (_,tag) => `<span style="color:var(--accent2);font-size:0.9em;opacity:0.8">#${tag}</span>`);
+  }).join('\n');
+}
+
+// ── Math compiler ──────────────────────────────────────────────────────────
+function _balancedGroup(src, pos) {
+  let depth=0, i=pos;
+  while (i<src.length) {
+    if (src[i]==='(') depth++;
+    else if (src[i]===')') { depth--; if (depth===0) return {content:src.slice(pos+1,i),end:i+1}; }
+    i++;
+  }
+  return null;
+}
+function _applyFunc2(src, name, fn2, fn1) {
+  let out='', i=0;
+  const kw=name+'(';
+  while (i<src.length) {
+    const idx=src.indexOf(kw,i);
+    if (idx===-1) { out+=src.slice(i); break; }
+    if (idx>0 && /[a-zA-Z]/.test(src[idx-1])) { out+=src[i]; i++; continue; }
+    out+=src.slice(i,idx);
+    const g1=_balancedGroup(src,idx+name.length);
+    if (!g1) { out+=kw; i=idx+kw.length; continue; }
+    if (src[g1.end]==='(' && fn2) {
+      const g2=_balancedGroup(src,g1.end);
+      if (g2) { out+=fn2(g1.content,g2.content); i=g2.end; continue; }
+    }
+    out+=fn1?fn1(g1.content):(kw+g1.content+')');
+    i=g1.end;
+  }
+  return out;
+}
+function _applyFunc1(src,name,fn) { return _applyFunc2(src,name,null,fn); }
+function _applyFrac(src) {
+  let out='', i=0;
+  while (i<src.length) {
+    if (src[i]==='(') {
+      const g1=_balancedGroup(src,i);
+      if (g1 && src[g1.end]==='/' && src[g1.end+1]==='(') {
+        const g2=_balancedGroup(src,g1.end+1);
+        if (g2) { out+=`\\frac{${g1.content}}{${g2.content}}`; i=g2.end; continue; }
+      }
+      out+=src[i]; i++;
+    } else { out+=src[i]; i++; }
+  }
+  return out;
+}
+function _applySymbols(src) {
+  const syms=window.LECTURNOTE_COMMANDS.MATH_SYMBOLS;
+  for (const [k,v] of Object.entries(syms)) {
+    const esc=k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    // For alpha keys, require word boundary AND no backslash before (so we don't re-process \cdot, \pi, etc)
+    const re=/[a-zA-Z]/.test(k[0])
+      ? new RegExp(`(^|[^\\\\])\\b${esc}\\b`,'g')
+      : new RegExp(esc,'g');
+    try {
+      src=src.replace(re, (match, before) => /[a-zA-Z]/.test(k[0]) ? (before||'') + v : v);
+    } catch(e) {}
+  }
+  return src;
+}
+function compileMath(src) {
+  let prev, safety=0;
+  do {
+    prev=src;
+    src=_applyFunc1(src,'vec',x=>`\\vec{${x}}`);
+    src=_applyFunc1(src,'hat',x=>`\\hat{${x}}`);
+    src=_applyFunc1(src,'bar',x=>`\\bar{${x}}`);
+    src=_applyFunc1(src,'tilde',x=>`\\tilde{${x}}`);
+    src=_applyFunc1(src,'over',x=>`\\overline{${x}}`);
+    src=_applyFunc1(src,'under',x=>`\\underline{${x}}`);
+    src=_applyFunc2(src,'sqrt',(n,x)=>`\\sqrt[${n}]{${x}}`,x=>`\\sqrt{${x}}`);
+    src=_applyFunc1(src,'abs',x=>`\\left|${x}\\right|`);
+    src=_applyFunc1(src,'norm',x=>`\\left\\|${x}\\right\\|`);
+    src=_applyFunc1(src,'floor',x=>`\\lfloor ${x} \\rfloor`);
+    src=_applyFunc1(src,'ceil',x=>`\\lceil ${x} \\rceil`);
+    src=_applyFunc1(src,'text',x=>`\\text{${x}}`);
+    src=_applyFunc2(src,'binom',(n,k)=>`\\binom{${n}}{${k}}`);
+    src=_applyFunc2(src,'obrace',(x,l)=>`\\overbrace{${x}}^{\\text{${l}}}`);
+    src=_applyFunc2(src,'ubrace',(x,l)=>`\\underbrace{${x}}_{\\text{${l}}}`);
+  } while (src!==prev && ++safety<8);
+  src=_applyFrac(src);
+  src=_applyFunc2(src,'sum',(s,u)=>`\\sum_{${_arg(s)}}^{${_arg(u)}}`,s=>`\\sum_{${_arg(s)}}`);
+  src=_applyFunc2(src,'int',(a,b)=>`\\int_{${_arg(a)}}^{${_arg(b)}}`,s=>`\\int_{${_arg(s)}}`);
+  src=_applyFunc2(src,'prod',(a,b)=>`\\prod_{${_arg(a)}}^{${_arg(b)}}`,s=>`\\prod_{${_arg(s)}}`);
+  src=_applyFunc1(src,'lim',s=>`\\lim_{${_arg(s)}}`);
+  src=src.replace(/\bsum\b(?!_)/g,'\\sum').replace(/\bint\b(?!_)/g,'\\int')
+         .replace(/\blim\b(?!_)/g,'\\lim').replace(/\bprod\b(?!_)/g,'\\prod');
+  src=src.replace(/\bmat\((\d+)x(\d+)\)\[([^\]]*)\]/g,(_,r,c,vals)=>_buildMatrixFilled(+r,+c,vals));
+  src=src.replace(/\bmat\((\d+)x(\d+)\)/g,(_,r,c)=>_buildMatrix(+r,+c));
+  src=src.replace(/\bcases\b/g,`\\begin{cases} f_1 & \\text{if } c_1 \\\\ f_2 & \\text{if } c_2 \\end{cases}`);
+  src=_applySymbols(src);
+  return src;
+}
+function renderMath(tex, display) {
+  try { return katex.renderToString(tex,{displayMode:display,throwOnError:false,output:'html'}); }
+  catch(e) { return `<span style="color:var(--coral);font-size:11px">[math: ${escHtml(e.message)}]</span>`; }
+}
+function processMath(html) {
+  function unesc(s) {
+    return s.replace(/&gt;/g,'>').replace(/&lt;/g,'<').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'");
+  }
+  html=html.replace(/\$\$\(([\s\S]*?)\)\$\$/g,(_,inner)=>renderMath(compileMath(unesc(inner)),true));
+  html=html.replace(/\$\(([\s\S]*?)\)\$/g,    (_,inner)=>renderMath(compileMath(unesc(inner)),false));
+  return html;
+}
+
+// ── Anchor helpers ─────────────────────────────────────────────────────────
+function slugify(text) {
+  return text.toLowerCase().trim().replace(/[^\w\s-]/g,'').replace(/[\s_]+/g,'-').replace(/^-+|-+$/g,'');
+}
+function extractHeadings(md) {
+  return md.split('\n').reduce((acc,line,i)=>{
+    const m=line.match(/^(#{1,4})\s+(.+)/);
+    if (m) acc.push({level:m[1].length,text:m[2].trim(),lineIndex:i,slug:slugify(m[2])});
+    return acc;
+  },[]);
+}
+function processAnchors(html) {
+  return html.replace(/\[\[#([^\]]+)\]\]/g,(_,heading)=>{
+    const slug=slugify(heading);
+    return `<a class="internal-anchor" data-slug="${escHtml(slug)}" href="#">${escHtml(heading)}</a>`;
+  });
+}
+function injectHeadingIds() {
+  previewInner.querySelectorAll('h1,h2,h3,h4').forEach(h=>{ h.id='h-'+slugify(h.textContent); });
+}
+previewInner.addEventListener('click', e => {
+  const a=e.target.closest('a.internal-anchor');
+  if (!a) return;
+  e.preventDefault();
+  const target=previewInner.querySelector('#h-'+a.dataset.slug);
+  if (target) {
+    target.scrollIntoView({behavior:'smooth',block:'start'});
+    target.classList.add('jump-target');
+    setTimeout(()=>target.classList.remove('jump-target'),1000);
+  } else showToast('Heading not found: '+a.textContent);
+});
+
+// ── Marked config ──────────────────────────────────────────────────────────
+// Code blocks are pre-extracted in extractCodeBlocks() and rendered via
+// hljs into placeholders, then injected back AFTER marked runs.
+marked.use({ breaks: true, gfm: true });
+
+let pendingCode = [];
+
+function extractCodeBlocks(md) {
+  pendingCode = [];
+  // Match ```lang\n...\n``` blocks (with optional language)
+  return md.replace(/```([a-zA-Z0-9_+-]*)\n([\s\S]*?)```/g, (_, lang, code) => {
+    const idx = pendingCode.length;
+    pendingCode.push({ lang: lang.trim(), code });
+    return `CODEBLOCK_${idx}_END`;
+  });
+}
+
+function injectCodeBlocks(html) {
+  return html.replace(/CODEBLOCK_(\d+)_END/g, (_, idx) => {
+    const item = pendingCode[parseInt(idx)];
+    if (!item) return '';
+    let highlighted;
+    try {
+      highlighted = item.lang && hljs.getLanguage(item.lang)
+        ? hljs.highlight(item.code, { language: item.lang }).value
+        : hljs.highlightAuto(item.code).value;
+    } catch(e) {
+      highlighted = escHtml(item.code);
+    }
+    const badge = item.lang ? `<span class="lang-badge">${escHtml(item.lang)}</span>` : '';
+    return `<pre>${badge}<code class="hljs">${highlighted}</code></pre>`;
+  });
+}
+
+// Strip any <p>TOKEN</p> wrapping marked adds around block-level tokens
+function stripPWrapper(html, token) {
+  // marked sometimes wraps standalone lines in <p>, strip it for block tokens
+  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return html
+    .replace(new RegExp(`<p>\\s*${escaped}\\s*</p>`, 'g'), token)
+    .replace(new RegExp(`<p>\\s*${escaped}\\s*`, 'g'), token)  // unclosed p
+    .replace(new RegExp(`\\s*${escaped}\\s*</p>`, 'g'), token); // late-closed p
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+let renderTimer=null, saveTimer=null;
+// ── Section numbering & Table of Contents ─────────────────────────────────
+
+// Build a map from heading text → section number string (e.g. "2.1.3")
+// Skips h1 (the main title). Works on the raw markdown.
+function buildSectionNumbers(md) {
+  const lines = md.split('\n');
+  const counters = [0, 0, 0]; // h2, h3, h4
+  const map = {}; // slug → number string
+
+  for (const line of lines) {
+    const m = line.match(/^(#{2,4})\s+(.+)/);
+    if (!m) continue;
+    const level = m[1].length - 2; // 0=h2, 1=h3, 2=h4
+    counters[level]++;
+    // Reset deeper levels
+    for (let i = level + 1; i < counters.length; i++) counters[i] = 0;
+    const numStr = counters.slice(0, level + 1).filter((_, i) => i <= level).join('.');
+    const slug = slugify(m[2].trim());
+    map[slug] = numStr;
+  }
+  return map;
+}
+
+// After render, inject section numbers into h2/h3/h4 in the preview
+function injectSectionNumbers(numMap) {
+  previewInner.querySelectorAll('h2,h3,h4').forEach(h => {
+    // Don't double-inject
+    if (h.querySelector('.section-num')) return;
+    const slug = slugify(h.textContent.trim());
+    const num = numMap[slug];
+    if (!num) return;
+    const span = document.createElement('span');
+    span.className = 'section-num';
+    span.textContent = num;
+    h.insertBefore(span, h.firstChild);
+  });
+}
+
+// Replace %index% token in HTML with a rendered TOC box
+function processIndexToken(html, md) {
+  if (!html.includes('INDEXTOKEN')) return html;
+  const numMap = buildSectionNumbers(md);
+  const lines = md.split('\n');
+  const counters = [0, 0, 0];
+
+  // Build ordered entries
+  const entries = [];
+  for (const line of lines) {
+    const m = line.match(/^(#{2,4})\s+(.+)/);
+    if (!m) continue;
+    const level  = m[1].length - 2;
+    counters[level]++;
+    for (let i = level + 1; i < counters.length; i++) counters[i] = 0;
+    const numStr = counters.slice(0, level + 1).join('.');
+    const text   = m[2].trim();
+    const slug   = slugify(text);
+    entries.push({ level, numStr, text, slug });
+  }
+
+  if (!entries.length) {
+    return html.replace(/INDEXTOKEN/g, '<div class="toc-box"><div class="toc-title">Table of Contents</div><p style="color:var(--text3);font-size:12px">No sections found</p></div>');
+  }
+
+  // Build nested <ol> structure
+  function buildList(items, depth) {
+    if (!items.length) return '';
+    let out = '<ul style="list-style:none;padding-left:' + (depth===0?'0':'16px') + ';margin:0">';
+    let i = 0;
+    while (i < items.length) {
+      const item = items[i];
+      if (item.level !== depth) { i++; continue; }
+      const children = [];
+      let j = i + 1;
+      while (j < items.length && items[j].level > depth) { children.push(items[j]); j++; }
+      out += `<li style="margin-bottom:5px"><a class="toc-link" data-slug="${item.slug}" href="#"><span class="toc-num">${item.numStr}</span>${escHtml(item.text)}</a>`;
+      if (children.length) out += buildList(children, depth + 1);
+      out += '</li>';
+      i = j;
+    }
+    out += '</ul>';
+    return out;
+  }
+
+  const listHtml = buildList(entries, 0);
+  const tocHtml = `<div class="toc-box"><div class="toc-title">Table of Contents</div>${listHtml}</div>`;
+  return html.replace(/INDEXTOKEN/g, tocHtml);
+}
+
+// Wire TOC link clicks (delegated — runs after each render)
+function wireTocLinks() {
+  previewInner.querySelectorAll('a.toc-link[data-slug]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const target = previewInner.querySelector('#h-' + a.dataset.slug);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        target.classList.add('jump-target');
+        setTimeout(() => target.classList.remove('jump-target'), 1000);
+      }
+    });
+  });
+}
+
+function render() {
+  const md = editor.value;
+  // Pre-extract: exercises, then code, then boxes (sequence/graph inside parseBoxes)
+  // Also replace %index% with a placeholder token before marked runs
+  const mdWithToken = md.replace(/%index%/g, '\nINDEXTOKEN\n');
+  const md1 = extractExercises(mdWithToken);
+  const md2 = extractCodeBlocks(md1);
+  let html = marked.parse(parseBoxes(md2));
+  html = processMath(html);
+  html = processAnchors(html);
+  html = processTags(html);
+  html = injectBlocks(html);
+  html = injectAllCodeBlocks(html);
+  html = injectExerciseRefs(html);
+  // Strip any <p> wrapper marked added around INDEXTOKEN
+  html = html.replace(/<p>\s*INDEXTOKEN\s*<\/p>/g, 'INDEXTOKEN');
+  html = processIndexToken(html, md); // replace token with actual TOC
+  previewInner.innerHTML = html;
+  injectHeadingIds();
+  const numMap = buildSectionNumbers(md);
+  injectSectionNumbers(numMap);
+  wireTocLinks();
+  renderExercisesSection();
+  const words = md.trim() ? md.trim().split(/\s+/).length : 0;
+  document.getElementById('wordcount').textContent = words + (words===1?' word':' words');
+  if (notes[activeId]) {
+    notes[activeId].tags = extractTags(md);
+    renderNotesList();
+  }
+}
+
+// ── Flash ──────────────────────────────────────────────────────────────────
+function flash(type) {
+  editor.classList.remove('flash-green','flash-purple');
+  void editor.offsetWidth;
+  editor.classList.add(type==='correct'?'flash-green':'flash-purple');
+  setTimeout(()=>editor.classList.remove('flash-green','flash-purple'),500);
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+let toastTimer=null;
+function showToast(msg) {
+  toastEl.textContent=msg; toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>toastEl.classList.remove('show'),1900);
+}
+
+// ── Cursor helpers ─────────────────────────────────────────────────────────
+function insertAtCursor(text, selectFrom, selectTo) {
+  const s=editor.selectionStart, e=editor.selectionEnd;
+  editor.value=editor.value.substring(0,s)+text+editor.value.substring(e);
+  if (selectFrom!==undefined) {
+    editor.selectionStart=s+selectFrom;
+    editor.selectionEnd=s+(selectTo!==undefined?selectTo:selectFrom);
+  } else editor.selectionStart=editor.selectionEnd=s+text.length;
+  editor.focus(); render();
+}
+function wrapSelection(before, after) {
+  const s=editor.selectionStart, e=editor.selectionEnd;
+  const sel=editor.value.substring(s,e);
+  editor.value=editor.value.substring(0,s)+before+sel+after+editor.value.substring(e);
+  editor.selectionStart=s+before.length; editor.selectionEnd=s+before.length+sel.length;
+  editor.focus(); render();
+}
+
+// ── Smart brackets ─────────────────────────────────────────────────────────
+const PAIRS = { '(':')', '[':']', '{':'}' };
+const CLOSE_CHARS = new Set([')', ']', '}']);
+// Dollar auto-close handled separately in keydown
+
+// ── Table modal ────────────────────────────────────────────────────────────
+// ── Visual table editor ────────────────────────────────────────────────────
+// tableData: 2D array, row 0 = header, rows 1+ = data
+
+function openTable() {
+  tableData = [];
+  tableData.push(['Col 1','Col 2','Col 3','Col 4']); // header
+  for (let r = 0; r < 3; r++) tableData.push(['','','','']);
+  renderTableEditor();
+  tableOverlay.classList.remove('hidden');
+  setTimeout(() => {
+    const first = document.querySelector('#table-editor-grid input');
+    if (first) { first.focus(); first.select(); }
+  }, 40);
+}
+
+function closeTable() {
+  tableOverlay.classList.add('hidden');
+  editor.focus();
+}
+
+function renderTableEditor() {
+  const grid = document.getElementById('table-editor-grid');
+  grid.innerHTML = tableData.map((row, r) =>
+    '<tr>' + row.map((cell, c) =>
+      '<td class="' + (r===0?'header-cell':'') + '">' +
+      '<input type="text" value="' + cell.replace(/"/g,'&quot;') + '"' +
+      ' data-r="' + r + '" data-c="' + c + '"' +
+      ' placeholder="' + (r===0?'Header':'') + '">' +
+      '</td>'
+    ).join('') + '</tr>'
+  ).join('');
+
+  grid.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('focus', () => inp.select());
+    inp.addEventListener('input', () => {
+      tableData[+inp.dataset.r][+inp.dataset.c] = inp.value;
+    });
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter')  { e.preventDefault(); insertTableFromEditor(); return; }
+      if (e.key === 'Escape') { e.preventDefault(); closeTable(); return; }
+      const r = +inp.dataset.r, c = +inp.dataset.c;
+      if (e.key === 'ArrowRight' && inp.selectionStart === inp.value.length) {
+        e.preventDefault(); focusTableCell(r, c + 1);
+      }
+      if (e.key === 'ArrowLeft' && inp.selectionStart === 0) {
+        e.preventDefault(); focusTableCell(r, c - 1);
+      }
+      if (e.key === 'ArrowDown')  { e.preventDefault(); focusTableCell(r + 1, c); }
+      if (e.key === 'ArrowUp')    { e.preventDefault(); focusTableCell(r - 1, c); }
+    });
+  });
+}
+
+function focusTableCell(r, c) {
+  const rows = tableData.length, cols = tableData[0]?.length || 0;
+  if (r < 0 || r >= rows || c < 0 || c >= cols) return;
+  const inp = document.querySelector(
+    '#table-editor-grid input[data-r="' + r + '"][data-c="' + c + '"]'
+  );
+  if (inp) { inp.focus(); inp.select(); }
+}
+
+function addTableRow() {
+  const cols = tableData[0]?.length || 1;
+  tableData.push(Array(cols).fill(''));
+  renderTableEditor();
+  focusTableCell(tableData.length - 1, 0);
+}
+function delTableRow() {
+  if (tableData.length <= 2) return;
+  tableData.pop();
+  renderTableEditor();
+}
+function addTableCol() {
+  if ((tableData[0]?.length || 0) >= 15) return;
+  const idx = tableData[0].length;
+  tableData.forEach((row, r) => row.push(r === 0 ? 'Col '+(idx+1) : ''));
+  renderTableEditor();
+  focusTableCell(0, idx);
+}
+function delTableCol() {
+  if ((tableData[0]?.length || 0) <= 1) return;
+  tableData.forEach(row => row.pop());
+  renderTableEditor();
+}
+
+function insertTableFromEditor() {
+  // Sync any pending input values
+  document.querySelectorAll('#table-editor-grid input').forEach(inp => {
+    tableData[+inp.dataset.r][+inp.dataset.c] = inp.value;
+  });
+  const cols = tableData[0].length;
+  const header = '| ' + tableData[0].join(' | ') + ' |';
+  const sep    = '| ' + Array(cols).fill('---').join(' | ') + ' |';
+  const rows   = tableData.slice(1).map(row => '| ' + row.join(' | ') + ' |');
+  const tableText = [header, sep, ...rows].join('\n');
+  closeTable();
+  const pos    = editor.selectionStart;
+  const before = editor.value.substring(0, pos);
+  const after  = editor.value.substring(pos);
+  const pre  = (before.length > 0 && !before.endsWith('\n')) ? '\n' : '';
+  const post = (after.length  > 0 && !after.startsWith('\n')) ? '\n' : '';
+  editor.value = before + pre + tableText + post + after;
+  editor.selectionStart = editor.selectionEnd = pos + pre.length + tableText.length + post.length;
+  editor.focus();
+  render();
+  showToast('Table inserted');
+}
+
+document.getElementById('tbl-add-col').addEventListener('click', addTableCol);
+document.getElementById('tbl-del-col').addEventListener('click', delTableCol);
+document.getElementById('tbl-add-row').addEventListener('click', addTableRow);
+document.getElementById('tbl-del-row').addEventListener('click', delTableRow);
+document.getElementById('tbl-cancel').addEventListener('click',  closeTable);
+document.getElementById('tbl-insert').addEventListener('click',  insertTableFromEditor);
+
+// Keyboard shortcuts active only while the table editor is open
+// Ctrl++  → add row     Ctrl+-  → remove row
+// Ctrl+Shift++  → add col    Ctrl+Shift+-  → remove col
+document.getElementById('table-overlay').addEventListener('keydown', e => {
+  if (e.key === 'Escape') { e.preventDefault(); closeTable(); return; }
+  const C = e.ctrlKey || e.metaKey;
+  if (!C) return;
+  const plus  = e.key === '+' || e.key === '='; // = is unshifted + on most keyboards
+  const minus = e.key === '-';
+  if (!plus && !minus) return;
+  e.preventDefault();
+  if (e.shiftKey) {
+    if (plus)  addTableCol();
+    if (minus) delTableCol();
+  } else {
+    if (plus)  addTableRow();
+    if (minus) delTableRow();
+  }
+});
+
+
+// ── Box insert ─────────────────────────────────────────────────────────────
+function openBox()  { boxOverlay.classList.remove('hidden'); }
+function closeBox() { boxOverlay.classList.add('hidden'); editor.focus(); }
+function insertBox(type) {
+  closeBox();
+  const bt=BOX_TYPES[type]; if (!bt) return;
+  let text, selectFrom, selectTo;
+  if (type==='sequence') {
+    text='\n:::sequence\nDNA\nATGCATGCATGC\n:::\n';
+    selectFrom=text.indexOf('ATGCATGCATGC');
+    selectTo=selectFrom+12;
+  } else if (type==='graph') {
+    text='\n:::graph LR\na: Node A\nb: Node B\nc: Node C\na -> b\na -> c\nb -> c : relates to\n:::\n';
+    selectFrom=text.indexOf('a: Node A');
+    selectTo=selectFrom+9;
+  } else {
+    const ph='Write here.';
+    text=`\n:::${type}\n**${bt.label}.** ${ph}\n:::\n`;
+    selectFrom=text.indexOf(ph); selectTo=selectFrom+ph.length;
+  }
+  insertAtCursor(text, selectFrom, selectTo);
+  showToast(bt.label+' inserted');
+}
+
+// ── Timestamp ──────────────────────────────────────────────────────────────
+function insertTimestamp() {
+  const now=new Date();
+  const h=String(now.getHours()).padStart(2,'0'), m=String(now.getMinutes()).padStart(2,'0');
+  insertAtCursor(`[${h}:${m}] `);
+  showToast('Timestamp '+h+':'+m);
+}
+
+// ── Scratchpad ─────────────────────────────────────────────────────────────
+function toggleScratchpad() {
+  scratchpad.classList.toggle('hidden');
+  if (!scratchpad.classList.contains('hidden')) document.getElementById('scratchpad-area').focus();
+  else editor.focus();
+}
+// Allow Ctrl+Alt+Z (or remapped shortcut) to close the scratchpad when it has focus
+document.getElementById('scratchpad-area').addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey) {
+    const combo = eventToCombo(e);
+    if (combo) {
+      // Find the scratchpad shortcut and check if this combo matches
+      const binding = shortcuts['scratchpad'];
+      const expected = binding.mods + '+' + (binding.key === ' ' ? ' ' : binding.key.toLowerCase());
+      if (combo === expected) { e.preventDefault(); toggleScratchpad(); return; }
+    }
+  }
+  if (e.key === 'Escape') { e.preventDefault(); toggleScratchpad(); }
+});
+
+// ── PDF export ─────────────────────────────────────────────────────────────
+function exportPDF() { document.title=noteName.value||'lecturnote'; window.print(); }
+
+// ── Sidebar ────────────────────────────────────────────────────────────────
+function toggleSidebar() {
+  sidebarOpen=!sidebarOpen;
+  document.getElementById('sidebar').classList.toggle('open',sidebarOpen);
+  document.getElementById('main').classList.toggle('sidebar-open',sidebarOpen);
+}
+
+// ── Jump palette ───────────────────────────────────────────────────────────
+let jumpItems=[], jumpSelected=0;
+function openJump() {
+  const md=editor.value;
+  jumpItems=[];
+  md.split('\n').forEach((line,i)=>{ const m=line.match(/^(#{1,4})\s+(.+)/); if (m) jumpItems.push({level:m[1].length,text:m[2].trim(),lineIndex:i}); });
+  jumpPalette.classList.remove('hidden'); jumpFilter.value=''; jumpSelected=0; renderJumpList(''); jumpFilter.focus();
+}
+function closeJump() { jumpPalette.classList.add('hidden'); editor.focus(); }
+function renderJumpList(q) {
+  const filtered=jumpItems.filter(it=>it.text.toLowerCase().includes(q.toLowerCase()));
+  jumpList.innerHTML=filtered.map((it,i)=>
+    `<div class="jump-item ${i===jumpSelected?'selected':''}" data-idx="${i}">
+      <span class="jump-level">${'#'.repeat(it.level)}</span>
+      <span>${'  '.repeat(it.level-1)}${escHtml(it.text)}</span>
+    </div>`).join('');
+  jumpList.querySelectorAll('.jump-item').forEach(el=>{ el.addEventListener('click',()=>doJump(filtered[parseInt(el.dataset.idx)])); });
+}
+function doJump(item) {
+  if (!item) return;
+  closeJump();
+  const lines=editor.value.split('\n'); let charPos=0;
+  for (let i=0;i<item.lineIndex;i++) charPos+=lines[i].length+1;
+  editor.selectionStart=editor.selectionEnd=charPos; editor.focus();
+  editor.scrollTop=item.lineIndex*parseFloat(getComputedStyle(editor).lineHeight)-80;
+  const headings=previewInner.querySelectorAll('h1,h2,h3,h4');
+  let matchH=null; headings.forEach(h=>{ if (h.textContent.trim()===item.text.trim()) matchH=h; });
+  if (matchH) { matchH.scrollIntoView({behavior:'smooth',block:'start'}); matchH.classList.add('jump-target'); setTimeout(()=>matchH.classList.remove('jump-target'),1000); }
+}
+jumpFilter.addEventListener('input',()=>{ jumpSelected=0; renderJumpList(jumpFilter.value); });
+function scrollJumpIntoView() {
+  const sel = jumpList.querySelector('.jump-item.selected');
+  if (sel) sel.scrollIntoView({ block:'nearest' });
+}
+jumpFilter.addEventListener('keydown',e=>{
+  const items=jumpList.querySelectorAll('.jump-item');
+  if (e.key==='ArrowDown'){e.preventDefault();jumpSelected=Math.min(jumpSelected+1,items.length-1);renderJumpList(jumpFilter.value);scrollJumpIntoView();}
+  if (e.key==='ArrowUp'){e.preventDefault();jumpSelected=Math.max(jumpSelected-1,0);renderJumpList(jumpFilter.value);scrollJumpIntoView();}
+  if (e.key==='Enter'){const q=jumpFilter.value.toLowerCase();doJump(jumpItems.filter(it=>it.text.toLowerCase().includes(q))[jumpSelected]);}
+  if (e.key==='Escape') closeJump();
+});
+
+// ── Anchor picker ──────────────────────────────────────────────────────────
+let anchorSelIdx=0, anchorMode='picker', inlineAnchorStart=-1;
+function openAnchorPicker() { anchorMode='picker'; _showAnchorDropdown(''); }
+function _showAnchorDropdown(query) {
+  const er=document.getElementById('editor-pane').getBoundingClientRect();
+  const mr=document.getElementById('main').getBoundingClientRect();
+  let top, left;
+  if (anchorMode==='inline') {
+    const coords=getCaretCoords(editor,editor.selectionStart);
+    top=er.top-mr.top+coords.top+20; left=er.left-mr.left+coords.left;
+  } else { top=42; left=er.left-mr.left+er.width/2-150; }
+  anchorDropdown.style.top=top+'px'; anchorDropdown.style.left=Math.max(4,left)+'px';
+  anchorDropdown.classList.remove('hidden'); anchorSearch.value=query; anchorSelIdx=0;
+  renderAnchorList(query); anchorSearch.focus();
+}
+function closeAnchorDropdown() {
+  anchorDropdown.classList.add('hidden');
+  if (anchorMode==='inline' && inlineAnchorStart>=0) {
+    const cur=editor.selectionStart;
+    editor.value=editor.value.substring(0,inlineAnchorStart)+editor.value.substring(cur);
+    editor.selectionStart=editor.selectionEnd=inlineAnchorStart; render();
+  }
+  anchorMode='picker'; inlineAnchorStart=-1; editor.focus();
+}
+function renderAnchorList(q) {
+  const headings=extractHeadings(editor.value);
+  const filtered=headings.filter(h=>h.text.toLowerCase().includes(q.toLowerCase()));
+  anchorListEl.innerHTML=filtered.length
+    ? filtered.map((h,i)=>`<div class="anchor-item ${i===anchorSelIdx?'sel':''}" data-idx="${i}"><span class="a-level">${'#'.repeat(h.level)}</span><span>${'&nbsp;'.repeat((h.level-1)*2)}${escHtml(h.text)}</span></div>`).join('')
+    : `<div style="padding:8px 12px;font-size:11px;color:var(--text3)">No headings found</div>`;
+  anchorListEl.querySelectorAll('.anchor-item').forEach(el=>{
+    el.addEventListener('mousedown',e=>{ e.preventDefault(); confirmAnchor(headings.filter(h=>h.text.toLowerCase().includes(anchorSearch.value.toLowerCase()))[parseInt(el.dataset.idx)]); });
+  });
+}
+function confirmAnchor(item) {
+  if (!item) return;
+  anchorDropdown.classList.add('hidden');
+  if (anchorMode==='inline' && inlineAnchorStart>=0) {
+    const cur=editor.selectionStart; const anchor=`[[#${item.text}]]`;
+    editor.value=editor.value.substring(0,inlineAnchorStart)+anchor+editor.value.substring(cur);
+    editor.selectionStart=editor.selectionEnd=inlineAnchorStart+anchor.length;
+  } else insertAtCursor(`[[#${item.text}]]`);
+  anchorMode='picker'; inlineAnchorStart=-1; editor.focus(); render();
+  showToast('Anchor → '+item.text);
+}
+anchorSearch.addEventListener('input',()=>{ anchorSelIdx=0; renderAnchorList(anchorSearch.value); });
+function scrollAnchorIntoView() {
+  const sel = anchorListEl.querySelector('.anchor-item.sel');
+  if (sel) sel.scrollIntoView({ block:'nearest' });
+}
+anchorSearch.addEventListener('keydown',e=>{
+  const items=anchorListEl.querySelectorAll('.anchor-item');
+  if (e.key==='ArrowDown'){e.preventDefault();anchorSelIdx=Math.min(anchorSelIdx+1,items.length-1);renderAnchorList(anchorSearch.value);scrollAnchorIntoView();}
+  if (e.key==='ArrowUp'){e.preventDefault();anchorSelIdx=Math.max(anchorSelIdx-1,0);renderAnchorList(anchorSearch.value);scrollAnchorIntoView();}
+  if (e.key==='Enter'||e.key==='Tab'){e.preventDefault();confirmAnchor(extractHeadings(editor.value).filter(h=>h.text.toLowerCase().includes(anchorSearch.value.toLowerCase()))[anchorSelIdx]);}
+  if (e.key==='Escape') closeAnchorDropdown();
+});
+
+// ── Caret coords helper ────────────────────────────────────────────────────
+function getCaretCoords(el, pos) {
+  const div=document.createElement('div');
+  const style=getComputedStyle(el);
+  ['fontFamily','fontSize','fontWeight','lineHeight','letterSpacing','paddingTop','paddingLeft','paddingRight','borderLeftWidth','borderTopWidth','whiteSpace','wordWrap','overflowWrap'].forEach(p=>div.style[p]=style[p]);
+  div.style.cssText+='position:absolute;visibility:hidden;white-space:pre-wrap;width:'+el.offsetWidth+'px';
+  div.textContent=el.value.substring(0,pos);
+  const span=document.createElement('span'); span.textContent='|'; div.appendChild(span);
+  document.body.appendChild(div);
+  const coords={top:span.offsetTop,left:span.offsetLeft};
+  document.body.removeChild(div); return coords;
+}
+
+// ── Code picker ────────────────────────────────────────────────────────────
+const CODE_LANGS={'p':'python','j':'javascript','t':'typescript','r':'rust','c':'cpp','m':'matlab','l':'latex','b':'bash','h':'html','s':'sql'};
+const codePicker=document.getElementById('code-picker');
+let codePickerOpen=false;
+function openCodePicker() { codePicker.classList.remove('hidden'); codePickerOpen=true; }
+function closeCodePicker() { codePicker.classList.add('hidden'); codePickerOpen=false; editor.focus(); }
+function insertCodeBlock(lang) {
+  closeCodePicker();
+  const ph='# your code here';
+  const text=`\n\`\`\`${lang}\n${ph}\n\`\`\`\n`;
+  insertAtCursor(text, text.indexOf(ph), text.indexOf(ph)+ph.length);
+  showToast(lang+' block');
+}
+document.getElementById('code-lang-grid').querySelectorAll('.lang-opt').forEach(el=>{
+  el.addEventListener('click',()=>insertCodeBlock(el.dataset.lang));
+});
+document.addEventListener('keydown',e=>{
+  if (!codePickerOpen) return;
+  if (e.key==='Escape'){e.preventDefault();closeCodePicker();return;}
+  const lang=CODE_LANGS[e.key.toLowerCase()];
+  if (lang){e.preventDefault();insertCodeBlock(lang);}
+},true);
+
+// ── Snippet expander ───────────────────────────────────────────────────────
+let snippetWord='', snippetTimeout=null;
+function checkSnippet() {
+  const pos=editor.selectionStart;
+  const before=editor.value.substring(0,pos);
+  const m=before.match(/\b([a-z]{2,10})$/);
+  if (!m) { hideSnippetHint(); return; }
+  const word=m[1];
+  const snips=window.LECTURNOTE_COMMANDS.SNIPPETS;
+  if (snips[word]) {
+    snippetWord=word;
+    const coords=getCaretCoords(editor,pos);
+    const er=document.getElementById('editor-pane').getBoundingClientRect();
+    snippetHint.style.top=(coords.top+24)+'px';
+    snippetHint.style.left=Math.min(coords.left, er.width-220)+'px';
+    snippetHint.innerHTML=`expand <strong>${word}</strong><kbd>Tab</kbd>`;
+    snippetHint.classList.remove('hidden');
+  } else { hideSnippetHint(); }
+}
+function hideSnippetHint() { snippetHint.classList.add('hidden'); snippetWord=''; }
+function expandSnippet() {
+  if (!snippetWord) return false;
+  const snips=window.LECTURNOTE_COMMANDS.SNIPPETS;
+  let expansion=snips[snippetWord];
+  if (!expansion) return false;
+  if (snippetWord==='date') expansion=new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
+  const pos=editor.selectionStart;
+  const before=editor.value.substring(0,pos);
+  const start=pos-snippetWord.length;
+  const after=editor.value.substring(pos);
+  let text=expansion.replace(/\\n/g,'\n').replace(/\\t/g,'  ');
+  const tabIdx=text.indexOf('\t');
+  editor.value=editor.value.substring(0,start)+text.replace(/\t/g,'')+after;
+  if (tabIdx>=0) { editor.selectionStart=editor.selectionEnd=start+tabIdx; }
+  else editor.selectionStart=editor.selectionEnd=start+text.replace(/\t/g,'').length;
+  hideSnippetHint(); editor.focus(); render();
+  showToast('Expanded: '+snippetWord);
+  return true;
+}
+
+// ── Inline [[# trigger ─────────────────────────────────────────────────────
+editor.addEventListener('input', () => {
+  const pos=editor.selectionStart;
+  const before=editor.value.substring(0,pos);
+  const match=before.match(/\[\[#([^\]]*)$/);
+  if (match) {
+    if (anchorDropdown.classList.contains('hidden')) { anchorMode='inline'; inlineAnchorStart=pos-match[0].length; }
+    if (anchorMode==='inline') { _showAnchorDropdown(match[1]); }
+  } else {
+    if (anchorMode==='inline' && !anchorDropdown.classList.contains('hidden')) {
+      anchorDropdown.classList.add('hidden'); anchorMode='picker'; inlineAnchorStart=-1;
+    }
+  }
+  clearTimeout(renderTimer); renderTimer=setTimeout(render,80);
+  clearTimeout(saveTimer);   saveTimer=setTimeout(saveCurrentNote,800);
+  clearTimeout(snippetTimeout); snippetTimeout=setTimeout(checkSnippet,300);
+});
+
+// ── Image paste ────────────────────────────────────────────────────────────
+editor.addEventListener('paste', e => {
+  const items=e.clipboardData?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      e.preventDefault();
+      const file=item.getAsFile();
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        const dataUrl=ev.target.result;
+        insertAtCursor(`\n![image](${dataUrl})\n`);
+        showToast('Image pasted');
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+  }
+});
+
+// ── Autocorrect — Hunspell via preload.js ────────────────────────────────
+// window.hunspell is exposed by preload.js via contextBridge using nspell.
+// preload.js runs in Node context so require('nspell') works there.
+// If not in Electron (e.g. browser preview), window.hunspell is undefined
+// and autocorrect falls back to the explicit AUTOCORRECT dict only.
+
+function getHunspellLang() {
+  const sel = document.getElementById('dict-select')?.value ?? 'both';
+  return sel;
+}
+
+function hunspellCorrect(word) {
+  if (!window.hunspell?.ready) return null;
+  const lang = getHunspellLang();
+  if (lang === 'off') return null;
+  const lower = word.toLowerCase();
+  if (lower.length < 2) return null;
+  if (/[^a-záéíóúüñ]/.test(lower)) return null;
+  if (window.hunspell.correct(lower, lang)) return null;
+  const suggestions = window.hunspell.suggest(lower, lang);
+  if (!suggestions.length) return null;
+  const best = suggestions[0];
+  if (word[0] === word[0].toUpperCase() && word[0] !== word[0].toLowerCase()) {
+    return best[0].toUpperCase() + best.slice(1);
+  }
+  return best;
+}
+
+function applyCorrection(original, correction) {
+  const sel   = editor.selectionStart;
+  const start = sel - original.length;
+  editor.value = editor.value.substring(0, start) + correction + editor.value.substring(sel);
+  editor.selectionStart = editor.selectionEnd = start + correction.length;
+  flash('correct');
+  render();
+}
+
+function tryAutocorrect(beforeSpace) {
+  const AC    = window.LECTURNOTE_COMMANDS.AUTOCORRECT;
+  const match = beforeSpace.match(/([a-zA-ZáéíóúüñÁÉÍÓÚÜÑ']+)$/);
+  if (!match) return false;
+  const word     = match[1];
+  const explicit = AC[word] || AC[word.toLowerCase()];
+  if (explicit) { applyCorrection(word, explicit); return true; }
+  const suggestion = hunspellCorrect(word);
+  if (suggestion && suggestion !== word && suggestion !== word.toLowerCase()) {
+    applyCorrection(word, suggestion);
+    return true;
+  }
+  return false;
+}
+
+// ── Shortcut system ────────────────────────────────────────────────────────
+// Each shortcut has: key (default trigger), mods ('ctrl+alt'|'ctrl'|'ctrl+shift'),
+// label, desc. All are remappable including modifier family.
+
+const SHORTCUT_DEFAULTS = {
+  // Ctrl+Alt family
+  'table':      { key:'y', mods:'ctrl+alt', label:'Insert table',       desc:'Opens the table size wizard' },
+  'example':    { key:'e', mods:'ctrl+alt', label:'Example box',        desc:'Inserts a blue example box' },
+  'definition': { key:'d', mods:'ctrl+alt', label:'Definition box',     desc:'Inserts a green definition box' },
+  'theorem':    { key:'w', mods:'ctrl+alt', label:'Theorem box',        desc:'Inserts a purple theorem box' },
+  'note':       { key:'n', mods:'ctrl+alt', label:'Note box',           desc:'Inserts a pink note box' },
+  'proof':      { key:'p', mods:'ctrl+alt', label:'Proof box',          desc:'Inserts a teal proof box' },
+  'remark':     { key:'r', mods:'ctrl+alt', label:'Remark box',         desc:'Inserts a grey remark box' },
+  'sequence':   { key:'q', mods:'ctrl+alt', label:'Sequence block',     desc:'Inserts a DNA/RNA/AA sequence block' },
+  'warning':    { key:'!', mods:'ctrl+alt', label:'Warning box',        desc:'Inserts an amber warning box' },
+  'boxpicker':  { key:'b', mods:'ctrl+alt', label:'Box picker',         desc:'Opens the box type picker menu' },
+  'sidebar':    { key:'o', mods:'ctrl+alt', label:'Toggle sidebar',     desc:'Opens/closes the notes sidebar' },
+  'anchor':     { key:'k', mods:'ctrl+alt', label:'Insert anchor',      desc:'Opens the internal anchor picker' },
+  'code':       { key:'j', mods:'ctrl+alt', label:'Code block',         desc:'Opens the code language picker' },
+  'scratchpad': { key:'z', mods:'ctrl+alt', label:'Toggle scratchpad',  desc:'Opens/closes the floating scratchpad' },
+  'timestamp':  { key:' ', mods:'ctrl+alt', label:'Insert timestamp',   desc:'Inserts current time [HH:MM]' },
+  'exercise':   { key:'x', mods:'ctrl+alt', label:'Exercise block',     desc:'Inserts an exercise with solution' },
+  'newnote':    { key:'m', mods:'ctrl+alt', label:'New note',           desc:'Creates a new empty note' },
+  // Ctrl family
+  'bold':       { key:'b', mods:'ctrl', label:'Bold',                   desc:'Wraps selection in **bold**' },
+  'italic':     { key:'i', mods:'ctrl', label:'Italic',                 desc:'Wraps selection in *italic*' },
+  'inlinecode': { key:'`', mods:'ctrl', label:'Inline code',            desc:'Wraps selection in backticks' },
+  'jump':       { key:'g', mods:'ctrl', label:'Section jump',           desc:'Opens the section jump palette' },
+  'save':       { key:'s', mods:'ctrl', label:'Save',                   desc:'Saves the current note' },
+  'settings':   { key:',', mods:'ctrl', label:'Settings',               desc:'Opens the shortcuts settings panel' },
+  // Ctrl+Shift family
+  'pdf':        { key:'s', mods:'ctrl+shift', label:'Export PDF',       desc:'Exports note to PDF via print dialog' },
+};
+
+const SHORTCUT_ACTIONS = {
+  'table':      () => openTable(),
+  'example':    () => insertBox('example'),
+  'definition': () => insertBox('definition'),
+  'theorem':    () => insertBox('theorem'),
+  'note':       () => insertBox('note'),
+  'proof':      () => insertBox('proof'),
+  'remark':     () => insertBox('remark'),
+  'sequence':   () => insertBox('sequence'),
+  'warning':    () => insertBox('warning'),
+  'boxpicker':  () => openBox(),
+  'sidebar':    () => toggleSidebar(),
+  'anchor':     () => openAnchorPicker(),
+  'code':       () => openCodePicker(),
+  'scratchpad': () => toggleScratchpad(),
+  'timestamp':  () => insertTimestamp(),
+  'exercise':   () => insertExercise(),
+  'newnote':    () => newNote(),
+  'bold':       () => wrapSelection('**','**'),
+  'italic':     () => wrapSelection('*','*'),
+  'inlinecode': () => wrapSelection('`','`'),
+  'jump':       () => openJump(),
+  'save':       () => { saveCurrentNote(); showToast('Saved'); },
+  'settings':   () => openSettings(),
+  'pdf':        () => exportPDF(),
+};
+
+const SHORTCUTS_STORAGE_KEY = 'lecturnote_shortcuts';
+
+function loadShortcuts() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SHORTCUTS_STORAGE_KEY) || '{}');
+    const result = {};
+    for (const id of Object.keys(SHORTCUT_DEFAULTS)) {
+      const def = SHORTCUT_DEFAULTS[id];
+      result[id] = saved[id] && saved[id].key ? saved[id] : { key: def.key, mods: def.mods };
+    }
+    return result;
+  } catch(e) {
+    return Object.fromEntries(Object.entries(SHORTCUT_DEFAULTS).map(([id,v])=>[id,{key:v.key,mods:v.mods}]));
+  }
+}
+function saveShortcuts(map) { localStorage.setItem(SHORTCUTS_STORAGE_KEY, JSON.stringify(map)); }
+
+let shortcuts = loadShortcuts();
+
+function eventToCombo(e) {
+  const C=e.ctrlKey||e.metaKey, A=e.altKey, S=e.shiftKey;
+  const key = e.key === ' ' ? ' ' : e.key.toLowerCase();
+  if (C && A && !S) return 'ctrl+alt+' + key;
+  if (C && S && !A) return 'ctrl+shift+' + key;
+  if (C && !A && !S) return 'ctrl+' + key;
+  return null;
+}
+function buildComboMap(map) {
+  const km = {};
+  for (const [id, binding] of Object.entries(map)) {
+    const k = binding.key === ' ' ? ' ' : binding.key.toLowerCase();
+    km[binding.mods + '+' + k] = id;
+  }
+  return km;
+}
+function dispatchCombo(combo) {
+  const id = buildComboMap(shortcuts)[combo];
+  if (id && SHORTCUT_ACTIONS[id]) { SHORTCUT_ACTIONS[id](); return true; }
+  return false;
+}
+
+// ── Settings panel ─────────────────────────────────────────────────────────
+const MOD_OPTIONS = ['ctrl+alt','ctrl','ctrl+shift'];
+const MOD_LABELS  = { 'ctrl+alt':'Ctrl+Alt', 'ctrl':'Ctrl', 'ctrl+shift':'Ctrl+Shift' };
+const MOD_GROUPS  = [
+  { label:'Ctrl + Alt',   filter: m => m==='ctrl+alt' },
+  { label:'Ctrl',         filter: m => m==='ctrl' },
+  { label:'Ctrl + Shift', filter: m => m==='ctrl+shift' },
+];
+
+let settingsOpen = false;
+let recordingId = null;
+
+function openSettings() {
+  settingsOpen = true;
+  document.getElementById('settings-overlay').classList.remove('hidden');
+  renderShortcutList();
+}
+function closeSettings() {
+  recordingId = null; settingsOpen = false;
+  document.getElementById('settings-overlay').classList.add('hidden');
+  editor.focus();
+}
+function resetAllShortcuts() {
+  shortcuts = Object.fromEntries(Object.entries(SHORTCUT_DEFAULTS).map(([id,v])=>[id,{key:v.key,mods:v.mods}]));
+  saveShortcuts(shortcuts); renderShortcutList(); showToast('All shortcuts reset to defaults');
+}
+
+function renderShortcutList() {
+  const container = document.getElementById('shortcut-list');
+  const comboMap = buildComboMap(shortcuts);
+  let html = '';
+  for (const group of MOD_GROUPS) {
+    const groupIds = Object.entries(SHORTCUT_DEFAULTS).filter(([,v]) => group.filter(v.mods));
+    if (!groupIds.length) continue;
+    html += `<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin:16px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--border)">${group.label}</div>`;
+    for (const [id, def] of groupIds) {
+      const binding = shortcuts[id];
+      const currentCombo = binding.mods + '+' + (binding.key===' '?' ':binding.key.toLowerCase());
+      const isDefault = binding.key===def.key && binding.mods===def.mods;
+      const conflictId = Object.entries(shortcuts).find(([oid,ob])=>{
+        if (oid===id) return false;
+        return (ob.mods+'+'+(ob.key===' '?' ':ob.key.toLowerCase()))===currentCombo;
+      })?.[0];
+      const conflictLabel = conflictId ? SHORTCUT_DEFAULTS[conflictId]?.label : null;
+      const keyDisp = binding.key===' ' ? 'Space' : binding.key.toUpperCase();
+      html += `<div class="shortcut-row" data-id="${id}">
+        <div class="shortcut-label">
+          ${escHtml(def.label)}<span>${escHtml(def.desc)}</span>
+          <div class="conflict-badge ${conflictLabel?'show':''}" id="conflict-${id}">Conflicts with: ${escHtml(conflictLabel||'')}</div>
+        </div>
+        <div class="shortcut-binding">
+          <select class="binding-mods-select" data-id="${id}" style="background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--text2);font-family:var(--mono);font-size:10px;padding:3px 5px;outline:none;cursor:pointer;margin-right:4px">
+            ${MOD_OPTIONS.map(m=>`<option value="${m}"${binding.mods===m?' selected':''}>${MOD_LABELS[m]}</option>`).join('')}
+          </select>
+          <div class="binding-display${recordingId===id?' recording':''}" id="binding-${id}" data-id="${id}">
+            ${recordingId===id?'press key…':escHtml('+'+keyDisp)}
+          </div>
+          ${!isDefault?`<button class="binding-reset" data-id="${id}" title="Reset">↺</button>`:''}
+        </div>
+      </div>`;
+    }
+  }
+  container.innerHTML = html;
+  container.querySelectorAll('.binding-mods-select').forEach(sel => {
+    sel.addEventListener('change', () => { shortcuts[sel.dataset.id].mods=sel.value; saveShortcuts(shortcuts); renderShortcutList(); });
+  });
+  container.querySelectorAll('.binding-display').forEach(el => {
+    el.addEventListener('click', () => { recordingId=el.dataset.id; renderShortcutList(); });
+  });
+  container.querySelectorAll('.binding-reset').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id=btn.dataset.id;
+      shortcuts[id]={key:SHORTCUT_DEFAULTS[id].key,mods:SHORTCUT_DEFAULTS[id].mods};
+      saveShortcuts(shortcuts); renderShortcutList();
+    });
+  });
+}
+
+document.addEventListener('keydown', e => {
+  if (!settingsOpen) return;
+  if (e.key==='Escape') { e.preventDefault(); if (recordingId){recordingId=null;renderShortcutList();}else closeSettings(); return; }
+  if (!recordingId) return;
+  if (['Control','Alt','Shift','Meta','CapsLock','Tab'].includes(e.key)) return;
+  e.preventDefault(); e.stopPropagation();
+  const newKey = e.key===' '?' ':e.key.toLowerCase();
+  const currentMods = shortcuts[recordingId].mods;
+  const newCombo = currentMods+'+'+newKey;
+  const conflictId = Object.entries(shortcuts).find(([oid,ob])=>{
+    if (oid===recordingId) return false;
+    return (ob.mods+'+'+(ob.key===' '?' ':ob.key.toLowerCase()))===newCombo;
+  })?.[0];
+  shortcuts[recordingId].key = newKey;
+  saveShortcuts(shortcuts); recordingId=null; renderShortcutList();
+  if (conflictId) showToast('⚠ Conflicts with: '+SHORTCUT_DEFAULTS[conflictId].label);
+  else showToast('Saved: '+(MOD_LABELS[currentMods]||currentMods)+'+'+newKey.toUpperCase());
+}, true);
+
+// ── Exercise field Tab navigation ─────────────────────────────────────────
+// Tab inside an :::exercise block cycles between name, problem, solution,
+// auto-selecting the content of each field so you can type to replace.
+function navigateExerciseField() {
+  const pos = editor.selectionStart;
+  const val = editor.value;
+  const lines = val.split('\n');
+
+  // Compute cursor line
+  let charPos = 0, cursorLine = 0;
+  for (let i = 0; i < lines.length; i++) {
+    if (charPos + lines[i].length >= pos) { cursorLine = i; break; }
+    charPos += lines[i].length + 1;
+  }
+
+  // Find :::exercise header above cursor
+  let exHeaderLine = -1;
+  for (let i = cursorLine; i >= 0; i--) {
+    if (lines[i].match(/^:::exercise/)) { exHeaderLine = i; break; }
+    // If we hit a standalone ::: before the header, we're not inside an exercise
+    if (lines[i].trim() === ':::' && i < cursorLine) return false;
+  }
+  if (exHeaderLine === -1) return false;
+
+  // Find :::solution and closing ::: below
+  let solLine = -1, closeLine = -1;
+  for (let i = exHeaderLine + 1; i < lines.length; i++) {
+    if (lines[i].trim() === ':::solution' && solLine === -1) solLine = i;
+    if (lines[i].trim() === ':::') { closeLine = i; break; }
+  }
+  if (closeLine === -1) return false;
+  // If cursor is past close line, we're not in this exercise
+  if (cursorLine > closeLine) return false;
+
+  // Determine current field
+  let field; // 0 = name, 1 = problem, 2 = solution
+  if (cursorLine === exHeaderLine) field = 0;
+  else if (solLine !== -1 && cursorLine > solLine) field = 2;
+  else field = 1;
+
+  // Compute next field
+  const hasSolution = solLine !== -1;
+  const nextField = (field + 1) % (hasSolution ? 3 : 2);
+
+  // Helper: absolute position of start of line N
+  function lineStart(n) { let p = 0; for (let i = 0; i < n; i++) p += lines[i].length + 1; return p; }
+
+  if (nextField === 0) {
+    // Name — select text after :::exercise on header line
+    const header = lines[exHeaderLine];
+    const prefix = ':::exercise';
+    const afterPrefix = header.slice(prefix.length);
+    const leadingWs = afterPrefix.match(/^\s*/)[0].length;
+    const nameStart = lineStart(exHeaderLine) + prefix.length + leadingWs;
+    const name = afterPrefix.trim();
+    editor.selectionStart = nameStart;
+    editor.selectionEnd   = nameStart + name.length;
+  } else if (nextField === 1) {
+    // Problem — select all text between header+1 and (solution or close)
+    const endLine = hasSolution ? solLine : closeLine;
+    const startPos = lineStart(exHeaderLine + 1);
+    const endPos   = lineStart(endLine) - 1; // -1 to drop trailing newline
+    editor.selectionStart = startPos;
+    editor.selectionEnd   = Math.max(startPos, endPos);
+  } else {
+    // Solution — select all text between solution+1 and close
+    const startPos = lineStart(solLine + 1);
+    const endPos   = lineStart(closeLine) - 1;
+    editor.selectionStart = startPos;
+    editor.selectionEnd   = Math.max(startPos, endPos);
+  }
+  editor.focus();
+  return true;
+}
+
+// ── Keyboard handler ───────────────────────────────────────────────────────
+editor.addEventListener('keydown', e => {
+  const C=e.ctrlKey||e.metaKey, A=e.altKey, S=e.shiftKey;
+
+  if ((e.key===' '||e.key==='Enter')&&!C&&!A) {
+    const pos    = editor.selectionStart;
+    const before = editor.value.substring(0, pos);
+    // Check for %index% token just typed
+    if (before.endsWith('%index%')) {
+      // Already in the text — render will handle it, just trigger re-render
+      render();
+      // Don't prevent default — let space/enter go through normally
+    }
+    const corrected=tryAutocorrect(before);
+    if (corrected&&e.key===' ') {
+      e.preventDefault();
+      const pos2=editor.selectionStart;
+      editor.value=editor.value.substring(0,pos2)+' '+editor.value.substring(pos2);
+      editor.selectionStart=editor.selectionEnd=pos2+1; render(); return;
+    }
+  }
+
+  if (!C && !A && PAIRS[e.key]) {
+    e.preventDefault();
+    const s=editor.selectionStart, en=editor.selectionEnd;
+    const sel=editor.value.substring(s,en);
+    const close=PAIRS[e.key];
+    editor.value=editor.value.substring(0,s)+e.key+sel+close+editor.value.substring(en);
+    if (s===en){editor.selectionStart=editor.selectionEnd=s+1;}
+    else{editor.selectionStart=s+1;editor.selectionEnd=s+1+sel.length;}
+    editor.focus(); render(); return;
+  }
+  if (!C && !A && CLOSE_CHARS.has(e.key)) {
+    const pos=editor.selectionStart;
+    if (editor.value[pos]===e.key){e.preventDefault();editor.selectionStart=editor.selectionEnd=pos+1;return;}
+  }
+
+  // Unified dynamic dispatch for all Ctrl combos
+  if (C) {
+    const combo=eventToCombo(e);
+    if (combo && dispatchCombo(combo)){e.preventDefault();return;}
+  }
+
+  if (e.key==='Tab') {
+    e.preventDefault();
+    if (!S && expandSnippet()) return;
+    if (!S && navigateExerciseField()) return;
+    insertAtCursor('  ');
+    return;
+  }
+  if (e.key==='Enter'&&!C&&!A) {
+    const s=editor.selectionStart;
+    const before=editor.value.substring(0,s);
+    const lines=before.split('\n'); const last=lines[lines.length-1];
+    const lm=last.match(/^(\s*)([-*+]|\d+\.)\s/);
+    if (lm) {
+      const bare=last.trim().replace(/^[-*+]/,'').replace(/^\d+\.\s*/,'').trim();
+      if (!bare){
+        e.preventDefault(); lines[lines.length-1]='';
+        editor.value=lines.join('\n')+editor.value.substring(s);
+        editor.selectionStart=editor.selectionEnd=before.lastIndexOf('\n')+1;
+        render(); return;
+      }
+      e.preventDefault();
+      let bullet=lm[2]; if (/\d+/.test(bullet)) bullet=(parseInt(bullet)+1)+'.';
+      insertAtCursor('\n'+lm[1]+bullet+' '); return;
+    }
+  }
+  if (e.key==='Escape') {
+    if (settingsOpen){closeSettings();return;}
+    if (codePickerOpen){closeCodePicker();return;}
+    if (!anchorDropdown.classList.contains('hidden')){closeAnchorDropdown();return;}
+    if (!tableOverlay.classList.contains('hidden')){closeTable();return;}
+    if (!boxOverlay.classList.contains('hidden')){closeBox();return;}
+    if (!jumpPalette.classList.contains('hidden')){closeJump();return;}
+    if (sidebarOpen){toggleSidebar();return;}
+    hideSnippetHint();
+  }
+});
+
+// Outside click
+document.addEventListener('click', e => {
+  if (settingsOpen && e.target===document.getElementById('settings-overlay')) closeSettings();
+  if (!jumpPalette.contains(e.target)&&e.target!==editor&&!jumpPalette.classList.contains('hidden')) closeJump();
+  if (!anchorDropdown.contains(e.target)&&e.target!==editor&&!anchorDropdown.classList.contains('hidden')){ anchorMode='picker';inlineAnchorStart=-1;anchorDropdown.classList.add('hidden'); }
+  if (!codePicker.contains(e.target)&&e.target!==editor&&codePickerOpen) closeCodePicker();
+  if (!snippetHint.contains(e.target)&&e.target!==editor) hideSnippetHint();
+});
+
+// ── Default note content ───────────────────────────────────────────────────
+const DEFAULT_CONTENT = `# Lecture Notes #biology #algorithms
+
+## Introduction
+
+Link to another section: [[#Key Theorems]]
+
+Inline math: $(sum(k=1)(n) k = (n(n+1))/(2))$
+
+Display math:
+$$(int(0)(inf) e^{-x^2} dx = (sqrt(pi))/(2))$$
+
+:::definition
+**Definition.** A sequence $(a_n)$ *converges* to $(L in RR)$ if for all $(epsilon > 0)$ there exists $(N in NN)$ such that $(n >= N implies abs(a_n - L) < epsilon)$.
+:::
+
+:::sequence
+DNA
+>example_seq
+ATGCATGCATGC
+TTAAGGCC
+:::
+
+:::graph LR
+a: Root
+b: Node A
+c: Node B
+d: Leaf
+a -> b
+a -> c
+b -> d : example
+:::
+
+## Key Theorems
+
+:::theorem
+**Theorem.** See also [[#Introduction]].
+:::
+
+\`\`\`python
+def needleman_wunsch(seq1, seq2, match=1, mismatch=-1, gap=-2):
+    # Global sequence alignment
+    n, m = len(seq1), len(seq2)
+    dp = [[0]*(m+1) for _ in range(n+1)]
+    return dp
+\`\`\`
+
+| n | $( n^2 )$ | $( 2^n )$ |
+|---|-----------|-----------|
+| 1 | 1 | 2 |
+| 2 | 4 | 4 |
+`;
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+loadNotes();
+editor.focus();
+
+// Show Hunspell status in topbar
+setTimeout(() => {
+  const el = document.getElementById('spell-status');
+  if (!el) return;
+  if (!window.hunspell) {
+    el.textContent = 'spell: no bridge';
+    el.style.color = 'var(--coral)';
+  } else if (!window.hunspell.ready) {
+    const err = window.hunspell.loadError || 'unknown error';
+    el.textContent = 'spell: failed — ' + err.slice(0, 60);
+    el.style.color = 'var(--coral)';
+  } else {
+    // Verify it actually works
+    const test = window.hunspell.correct('hello', 'en');
+    const sugg = window.hunspell.suggest('recieve', 'en');
+    el.textContent = `spell: OK (hello=${test}, recieve→${sugg[0]||'?'})`;
+    el.style.color = 'var(--green)';
+  }
+}, 500);
+</script>
+</body>
+</html>

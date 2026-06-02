@@ -1,0 +1,34 @@
+{
+  "name": "lecturnote",
+  "version": "1.0.0",
+  "description": "Keyboard-first lecture notes editor",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build-mac": "electron-builder --mac",
+    "build-win": "electron-builder --win",
+    "build-linux": "electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.lecturnote.app",
+    "productName": "lecturnote",
+    "files": ["index.html", "main.js", "preload.js", "dict/", "corpus_en.json", "corpus_es.json"],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "dependencies": {
+    "nspell": "^2.1.5"
+  },
+  "devDependencies": {
+    "electron": "^29.0.0",
+    "electron-builder": "^24.0.0"
+  }
+}
