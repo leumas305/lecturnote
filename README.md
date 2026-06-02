@@ -1,4 +1,4 @@
-![lecturnote](.github/banner.png)
+<img src=".github/banner.svg" alt="lecturnote" width="100%">
 
 # lecturnote - Beta 1.0
 
