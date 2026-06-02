@@ -392,7 +392,7 @@ app.commandLine.appendSwitch('disable-gpu-vsync');
 
 ---
 ## Feedback
-You can leave some feedback (wether it's bugs found or comments at: https://github.com/leumas305/lecturnote/issues
+You can leave some feedback (wether it's bugs found or comments) at: https://github.com/leumas305/lecturnote/issues
 
 ## Notes on future work
 
