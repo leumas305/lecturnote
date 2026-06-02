@@ -317,8 +317,6 @@ Fires on spacebar or Enter. Green flash = correction applied.
 2. **Hunspell** — real spell-checking using the `.aff`/`.dic` files in `dict/`:
    - English: ~49,000 words with full morphology
    - Spanish: ~57,000 words with full morphology
-   - Knows `tiro`, `tira`, `absoluta` etc. are correct — won't touch them
-   - Suggests `absoluta` for `absotluta`, `palabras` for `parlabras` etc.
 
 **Dictionary selector** (top bar): English / Spanish / Both / Off
 
@@ -393,6 +391,8 @@ app.commandLine.appendSwitch('disable-gpu-vsync');
 ```
 
 ---
+## Feedback
+You can leave some feedback (wether it's bugs found or comments at: https://github.com/leumas305/lecturnote/issues
 
 ## Notes on future work
 
