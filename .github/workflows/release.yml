@@ -1,0 +1,91 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'   # triggers on any tag like v1.0.0, v1.1.0-beta, etc.
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: macos-latest
+            platform: mac
+          - os: windows-latest
+            platform: win
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      # Linux needs these libraries for Electron to build
+      - name: Install Linux build deps
+        if: matrix.platform == 'linux'
+        run: sudo apt-get install -y rpm fakeroot
+
+      - name: Build
+        run: npm run build-${{ matrix.platform }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lecturnote-${{ matrix.platform }}
+          path: |
+            dist/*.dmg
+            dist/*.exe
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.rpm
+          if-no-files-found: warn
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: lecturnote ${{ github.ref_name }}
+          body: |
+            ## lecturnote ${{ github.ref_name }}
+
+            ### Download
+            | Platform | File |
+            |----------|------|
+            | 🐧 Linux | `.AppImage` — double click to run |
+            | 🍎 macOS | `.dmg` — drag to Applications |
+            | 🪟 Windows | `.exe` — run installer |
+
+            ### First time setup
+            No Node.js or terminal needed — just download and run.
+
+            ### What's new
+            <!-- Add release notes here when tagging -->
+
+          files: artifacts/**/*
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

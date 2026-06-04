@@ -1,7 +1,7 @@
 {
   "name": "lecturnote",
-  "version": "1.0.0",
-  "description": "Keyboard-first lecture notes editor",
+  "version": "1.0.0-beta",
+  "description": "Keyboard-first lecture notes editor for science and mathematics",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -12,16 +12,35 @@
   "build": {
     "appId": "com.lecturnote.app",
     "productName": "lecturnote",
-    "files": ["index.html", "main.js", "preload.js", "dict/", "corpus_en.json", "corpus_es.json"],
+    "files": [
+      "index.html",
+      "main.js",
+      "preload.js",
+      "dict/**/*",
+      "node_modules/**/*"
+    ],
     "mac": {
       "category": "public.app-category.productivity",
-      "target": "dmg"
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] }
+      ]
     },
     "win": {
-      "target": "nsis"
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ]
     },
     "linux": {
-      "target": "AppImage"
+      "target": [
+        { "target": "AppImage", "arch": ["x64"] },
+        { "target": "deb",      "arch": ["x64"] }
+      ],
+      "category": "Education"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true
     }
   },
   "dependencies": {

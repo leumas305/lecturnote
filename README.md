@@ -11,24 +11,18 @@ For full syntax reference and customisation guide, see [documentation.md](docume
 
 ---
 
-## Setup
+## Download
 
-Requires **Node.js LTS** — https://nodejs.org
+**[→ Latest release](https://github.com/leumas305/lecturnote/releases/latest)**
 
-```bash
-git clone https://github.com/leumas305/lecturnote
-cd lecturnote-app
-npm install
-npm start
-```
+| Platform | File | |
+|----------|------|-|
+| 🐧 Linux | `.AppImage` | Download, `chmod +x`, double click |
+| 🐧 Linux | `.deb` | `sudo dpkg -i lecturnote.deb` |
+| 🍎 macOS | `.dmg` | Open, drag to Applications |
+| 🪟 Windows | `.exe` | Run installer |
 
-### Build a distributable app
-
-```bash
-npm run build-mac     # macOS  → dist/*.dmg
-npm run build-win     # Windows → dist/*.exe
-npm run build-linux   # Linux  → dist/*.AppImage
-```
+No Node.js or terminal required.
 
 ---
 
@@ -62,6 +56,7 @@ You can change the key and the modifier family (Ctrl+Alt / Ctrl / Ctrl+Shift) pe
 | Ctrl+Alt+O | Toggle notes sidebar |
 | Ctrl+Alt+Z | Toggle scratchpad (not saved) |
 | Ctrl+, | Shortcuts settings |
+| Sync button | Toggle scroll sync — preview follows cursor position as you type. Pauses for 2s if you manually scroll the preview. Skips syncing on `%index%` and heading lines. |
 
 ### Formatting
 | Shortcut | Action |

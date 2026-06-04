@@ -511,6 +511,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14
     <button class="tbar-btn" onclick="openAnchorPicker()" title="Ctrl+Alt+K"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>anchor <span class="kb-pill">C-A-K</span></button>
     <button class="tbar-btn" onclick="toggleScratchpad()" title="Ctrl+Alt+Z"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>scratch <span class="kb-pill">C-A-Z</span></button>
     <button class="tbar-btn" onclick="openSettings()" title="Ctrl+, — shortcuts settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>shortcuts <span class="kb-pill">Ctrl+,</span></button>
+    <button class="tbar-btn" id="sync-btn" onclick="toggleScrollSync()" title="Toggle scroll sync">
+      <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+      sync
+    </button>
     <button class="tbar-btn" onclick="exportPDF()" title="Ctrl+Shift+S"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>PDF <span class="kb-pill">C-S-S</span></button>
   </div>
 </div>
@@ -1385,10 +1389,9 @@ function parseBoxes(md) {
           body.push(lines[i]); i++;
         }
         i++; // skip closing :::
-        const inner = marked.parse(body.join('\n').trim());
-        const rendered = `<div class="note-box ${bt.cls}"><div class="box-label">${bt.label}</div>${inner}</div>`;
+        // Store raw markdown body — will be rendered after processMath/processAnchors
         const token = `HTMLBLOCK_${pendingBlocks.length}_END`;
-        pendingBlocks.push({ token, html: rendered });
+        pendingBlocks.push({ token, rawBody: body.join('\n').trim(), bt });
         out.push('\n' + token + '\n');
         continue;
       }
@@ -1401,9 +1404,20 @@ function parseBoxes(md) {
 }
 
 function injectBlocks(html) {
-  for (const { token, html: blockHtml } of pendingBlocks) {
-    html = stripPWrapper(html, token);
-    html = html.replace(new RegExp(token, 'g'), blockHtml);
+  for (const block of pendingBlocks) {
+    let blockHtml;
+    if (block.rawBody !== undefined) {
+      // Box: render body now so math/anchors inside boxes work correctly
+      let inner = marked.parse(block.rawBody);
+      inner = processMath(inner);
+      inner = processAnchors(inner);
+      inner = processTags(inner);
+      blockHtml = `<div class="note-box ${block.bt.cls}"><div class="box-label">${block.bt.label}</div>${inner}</div>`;
+    } else {
+      blockHtml = block.html;
+    }
+    html = stripPWrapper(html, block.token);
+    html = html.replace(new RegExp(block.token, 'g'), blockHtml);
   }
   return html;
 }
@@ -1746,6 +1760,82 @@ function render() {
     notes[activeId].tags = extractTags(md);
     renderNotesList();
   }
+  syncScroll();
+}
+
+// ── Scroll sync ────────────────────────────────────────────────────────────
+let scrollSyncEnabled = true;
+let userScrolledPreview = false; // true when user has manually scrolled preview
+let scrollSyncTimeout = null;
+
+function toggleScrollSync() {
+  scrollSyncEnabled = !scrollSyncEnabled;
+  const btn = document.getElementById('sync-btn');
+  if (scrollSyncEnabled) {
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+    showToast('Scroll sync on');
+  } else {
+    btn.style.color = '';
+    btn.style.borderColor = '';
+    showToast('Scroll sync off');
+  }
+}
+
+// When user manually scrolls the preview, pause sync briefly
+document.getElementById('preview-pane').addEventListener('scroll', () => {
+  userScrolledPreview = true;
+  clearTimeout(scrollSyncTimeout);
+  // Resume sync after 2s of no manual scrolling
+  scrollSyncTimeout = setTimeout(() => { userScrolledPreview = false; }, 2000);
+}, { passive: true });
+
+function syncScroll() {
+  if (!scrollSyncEnabled || userScrolledPreview) return;
+
+  const pos = editor.selectionStart;
+  const md  = editor.value;
+  const lines = md.split('\n');
+
+  // Find cursor line number
+  let charCount = 0, cursorLine = 0;
+  for (let i = 0; i < lines.length; i++) {
+    charCount += lines[i].length + 1;
+    if (charCount >= pos) { cursorLine = i; break; }
+  }
+
+  // Skip syncing if cursor is on a %index% line or a ## heading line
+  // (editing a heading would move preview to TOC which is disorienting)
+  const cursorLineText = lines[cursorLine] || '';
+  if (cursorLineText.trim().startsWith('%index%')) return;
+  if (cursorLineText.match(/^#{1,4}\s/)) return;
+
+  // Find the nearest heading at or before the cursor line
+  // to identify which section we're in
+  let sectionSlug = null;
+  for (let i = cursorLine; i >= 0; i--) {
+    const m = lines[i].match(/^(#{2,4})\s+(.+)/);
+    if (m) { sectionSlug = slugify(m[2].trim()); break; }
+  }
+
+  const previewPane = document.getElementById('preview-pane');
+
+  if (sectionSlug) {
+    // Scroll preview to the heading of the current section
+    const headingEl = previewInner.querySelector('#h-' + sectionSlug);
+    if (headingEl) {
+      const paneTop    = previewPane.getBoundingClientRect().top;
+      const headingTop = headingEl.getBoundingClientRect().top;
+      const offset     = headingTop - paneTop - 40; // 40px padding from top
+      previewPane.scrollBy({ top: offset, behavior: 'smooth' });
+      return;
+    }
+  }
+
+  // Fallback: proportional scroll based on cursor position in document
+  const editorProgress = pos / Math.max(1, md.length);
+  const previewScrollMax = previewPane.scrollHeight - previewPane.clientHeight;
+  previewPane.scrollTo({ top: editorProgress * previewScrollMax, behavior: 'smooth' });
 }
 
 // ── Flash ──────────────────────────────────────────────────────────────────
@@ -2564,6 +2654,49 @@ editor.addEventListener('keydown', e => {
     if (editor.value[pos]===e.key){e.preventDefault();editor.selectionStart=editor.selectionEnd=pos+1;return;}
   }
 
+  // Smart $ — inline math: $ → $(  )$ with cursor inside
+  //            upgrade: press $ again while inside empty block → $$(  )$$
+  //            jump: cursor before )$ or )$$ → jump over closing delimiter
+  if (!C && !A && e.key === '$') {
+    const pos = editor.selectionStart;
+    const val = editor.value;
+
+    // Jump over closing )$$ first (check longer one first)
+    if (val.slice(pos, pos + 3) === ')$$') {
+      e.preventDefault();
+      editor.selectionStart = editor.selectionEnd = pos + 3;
+      return;
+    }
+    // Jump over closing )$
+    if (val.slice(pos, pos + 2) === ')$') {
+      e.preventDefault();
+      editor.selectionStart = editor.selectionEnd = pos + 2;
+      return;
+    }
+
+    // Upgrade inline → display:
+    // Check if we're inside an empty inline block: $( <cursor here, maybe spaces> )$
+    // Look backward for $( and forward for )$
+    const before = val.substring(0, pos);
+    const after  = val.substring(pos);
+    const backMatch  = before.match(/\$\(\s*$/);   // $( followed by optional spaces right before cursor
+    const frontMatch = after.match(/^\s*\)\$/);     // optional spaces then )$ right after cursor
+    if (backMatch && frontMatch) {
+      e.preventDefault();
+      const blockStart = pos - backMatch[0].length; // position of the $
+      const blockEnd   = pos + frontMatch[0].length; // position after )$
+      editor.value = val.substring(0, blockStart) + '$$(  )$$' + val.substring(blockEnd);
+      editor.selectionStart = editor.selectionEnd = blockStart + 4;
+      editor.focus(); render(); return;
+    }
+
+    // First $: insert inline math $(  )$
+    e.preventDefault();
+    editor.value = val.substring(0, pos) + '$(  )$' + val.substring(pos);
+    editor.selectionStart = editor.selectionEnd = pos + 3;
+    editor.focus(); render(); return;
+  }
+
   // Unified dynamic dispatch for all Ctrl combos
   if (C) {
     const combo=eventToCombo(e);
@@ -2672,6 +2805,9 @@ def needleman_wunsch(seq1, seq2, match=1, mismatch=-1, gap=-2):
 // ── Boot ───────────────────────────────────────────────────────────────────
 loadNotes();
 editor.focus();
+// Initialise sync button state
+document.getElementById('sync-btn').style.color = 'var(--green)';
+document.getElementById('sync-btn').style.borderColor = 'var(--green)';
 
 // Show Hunspell status in topbar
 setTimeout(() => {
