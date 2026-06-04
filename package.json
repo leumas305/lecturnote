@@ -2,6 +2,10 @@
   "name": "lecturnote",
   "version": "1.0.0-beta",
   "description": "Keyboard-first lecture notes editor for science and mathematics",
+  "author": {
+    "name": "Samuel",
+    "email": "leumas305@github.com"
+  },
   "main": "main.js",
   "scripts": {
     "start": "electron .",
