@@ -16,6 +16,7 @@ function createWindow() {
     minWidth: 800,
     minHeight: 500,
     title: 'lecturnote',
+    icon: path.join(__dirname, 'assets', 'icon.png'),
     backgroundColor: '#0f0f13',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     webPreferences: {
