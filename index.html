@@ -81,6 +81,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14
 #preview-pane li{color:var(--text);margin-bottom:3px}
 #preview-pane strong{color:var(--amber);font-weight:600}
 #preview-pane em{color:var(--text2);font-style:italic}
+#preview-pane strong em, #preview-pane em strong{color:var(--coral);font-weight:600;font-style:italic}
 #preview-pane code{background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-family:var(--mono);font-size:11.5px;color:var(--teal)}
 #preview-pane pre{background:#1a1b2e;border:1px solid #2a2a3e;border-radius:8px;padding:14px 18px;margin:0 0 14px;overflow-x:auto;position:relative}
 #preview-pane pre code.hljs{background:transparent;border:none;padding:0;font-size:12.5px;line-height:1.7;color:inherit}
@@ -1787,7 +1788,7 @@ document.getElementById('preview-pane').addEventListener('scroll', () => {
   userScrolledPreview = true;
   clearTimeout(scrollSyncTimeout);
   // Resume sync after 2s of no manual scrolling
-  scrollSyncTimeout = setTimeout(() => { userScrolledPreview = false; }, 2000);
+  scrollSyncTimeout = setTimeout(() => { userScrolledPreview = false; }, 4000);
 }, { passive: true });
 
 function syncScroll() {
@@ -1797,45 +1798,34 @@ function syncScroll() {
   const md  = editor.value;
   const lines = md.split('\n');
 
-  // Find cursor line number
+  // Find cursor line
   let charCount = 0, cursorLine = 0;
   for (let i = 0; i < lines.length; i++) {
     charCount += lines[i].length + 1;
     if (charCount >= pos) { cursorLine = i; break; }
   }
 
-  // Skip syncing if cursor is on a %index% line or a ## heading line
-  // (editing a heading would move preview to TOC which is disorienting)
   const cursorLineText = lines[cursorLine] || '';
+  // Skip on %index% lines
   if (cursorLineText.trim().startsWith('%index%')) return;
-  if (cursorLineText.match(/^#{1,4}\s/)) return;
-
-  // Find the nearest heading at or before the cursor line
-  // to identify which section we're in
-  let sectionSlug = null;
-  for (let i = cursorLine; i >= 0; i--) {
-    const m = lines[i].match(/^(#{2,4})\s+(.+)/);
-    if (m) { sectionSlug = slugify(m[2].trim()); break; }
-  }
 
   const previewPane = document.getElementById('preview-pane');
-
-  if (sectionSlug) {
-    // Scroll preview to the heading of the current section
-    const headingEl = previewInner.querySelector('#h-' + sectionSlug);
-    if (headingEl) {
-      const paneTop    = previewPane.getBoundingClientRect().top;
-      const headingTop = headingEl.getBoundingClientRect().top;
-      const offset     = headingTop - paneTop - 40; // 40px padding from top
-      previewPane.scrollBy({ top: offset, behavior: 'smooth' });
-      return;
-    }
-  }
-
-  // Fallback: proportional scroll based on cursor position in document
-  const editorProgress = pos / Math.max(1, md.length);
   const previewScrollMax = previewPane.scrollHeight - previewPane.clientHeight;
-  previewPane.scrollTo({ top: editorProgress * previewScrollMax, behavior: 'smooth' });
+  if (previewScrollMax <= 0) return;
+
+  // Use pure proportional scroll based on cursor position in the document
+  // This avoids the "jumps to section top" problem — it tracks exactly where
+  // you are proportionally through the whole document
+  const editorProgress = pos / Math.max(1, md.length);
+  const targetScroll = editorProgress * previewScrollMax;
+
+  // Only scroll if the target is meaningfully different from current position
+  // (avoid jitter when typing within the visible area)
+  const currentScroll = previewPane.scrollTop;
+  const delta = Math.abs(targetScroll - currentScroll);
+  if (delta < 40) return; // ignore tiny differences — don't fight the user
+
+  previewPane.scrollTo({ top: targetScroll, behavior: 'smooth' });
 }
 
 // ── Flash ──────────────────────────────────────────────────────────────────
@@ -1865,11 +1855,27 @@ function insertAtCursor(text, selectFrom, selectTo) {
   editor.focus(); render();
 }
 function wrapSelection(before, after) {
-  const s=editor.selectionStart, e=editor.selectionEnd;
-  const sel=editor.value.substring(s,e);
-  editor.value=editor.value.substring(0,s)+before+sel+after+editor.value.substring(e);
-  editor.selectionStart=s+before.length; editor.selectionEnd=s+before.length+sel.length;
-  editor.focus(); render();
+  const s = editor.selectionStart, e = editor.selectionEnd;
+  const val = editor.value;
+  const sel = val.substring(s, e);
+
+  // Toggle off: if selection is already wrapped, unwrap it
+  const bLen = before.length, aLen = after.length;
+  if (val.substring(s - bLen, s) === before && val.substring(e, e + aLen) === after) {
+    // Already wrapped — remove markers using execCommand for undo support
+    editor.selectionStart = s - bLen;
+    editor.selectionEnd   = e + aLen;
+    document.execCommand('insertText', false, sel);
+    editor.selectionStart = s - bLen;
+    editor.selectionEnd   = s - bLen + sel.length;
+    render(); return;
+  }
+
+  // Wrap using execCommand so browser undo (Ctrl+Z) works
+  document.execCommand('insertText', false, before + sel + after);
+  editor.selectionStart = s + bLen;
+  editor.selectionEnd   = s + bLen + sel.length;
+  render();
 }
 
 // ── Smart brackets ─────────────────────────────────────────────────────────
@@ -2068,7 +2074,19 @@ document.getElementById('scratchpad-area').addEventListener('keydown', e => {
 });
 
 // ── PDF export ─────────────────────────────────────────────────────────────
-function exportPDF() { document.title=noteName.value||'lecturnote'; window.print(); }
+function exportPDF() {
+  const prevTitle = document.title;
+  document.title = noteName.value || 'lecturnote';
+  // Show all solutions before printing
+  document.querySelectorAll('.solution-body').forEach(el => el.classList.remove('hidden'));
+  window.print();
+  // Restore after print dialog closes (fires on both confirm and cancel)
+  window.addEventListener('afterprint', () => {
+    document.title = prevTitle;
+    // Re-hide solutions that were hidden
+    renderExercisesSection();
+  }, { once: true });
+}
 
 // ── Sidebar ────────────────────────────────────────────────────────────────
 function toggleSidebar() {
