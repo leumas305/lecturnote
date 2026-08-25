@@ -841,18 +841,29 @@ window.LECTURNOTE_COMMANDS = {
     'in':'\\in','notin':'\\notin','subset':'\\subset','supset':'\\supset',
     'subseteq':'\\subseteq','supseteq':'\\supseteq',
     'cup':'\\cup','cap':'\\cap','emptyset':'\\emptyset','setminus':'\\setminus',
-    'pm':'\\pm','mp':'\\mp','xx':'\\times','cdot':'\\cdot',
+    'pm':'\\pm','mp':'\\mp','xx':'\\times','times':'\\times','cdot':'\\cdot',
     'circ':'\\circ','div':'\\div','oplus':'\\oplus','otimes':'\\otimes','oslash':'\\oslash',
     'neq':'\\neq','approx':'\\approx','equiv':'\\equiv',
     'll':'\\ll','gg':'\\gg','leq':'\\leq','geq':'\\geq',
     '>=':'\\geq','<=':'\\leq','!=':'\\neq',
     'sim':'\\sim','simeq':'\\simeq','cong':'\\cong','propto':'\\propto',
     '->':'\\to','<-':'\\leftarrow','=>':'\\Rightarrow',
+    'to':'\\to','from':'\\leftarrow',
     '<=>':'\\Leftrightarrow','~>':'\\leadsto',
     'uparrow':'\\uparrow','downarrow':'\\downarrow',
     'dots':'\\ldots','ldots':'\\ldots','cdots':'\\cdots',
     'vdots':'\\vdots','ddots':'\\ddots',
     'deg':'\\degree','prime':'\\prime','star':'\\star','dagger':'\\dagger',
+    // Chemistry & physics constants
+    'NA':'6.022\\times10^{23}',       // Avogadro's number
+    'avogadro':'6.022\\times10^{23}',
+    'planck':'6.626\\times10^{-34}',  // Planck constant
+    'boltz':'1.381\\times10^{-23}',   // Boltzmann constant
+    'echarge':'1.602\\times10^{-19}', // electron charge
+    'lightspeed':'2.998\\times10^{8}',// speed of light
+    // Chemistry arrows and states
+    'yields':'\\rightarrow','equilib':'\\rightleftharpoons',
+    'aq':'\\text{(aq)}','sol':'\\text{(s)}','liq':'\\text{(l)}','gas':'\\text{(g)}',
   },
 
   // ── Snippet expander ──────────────────────────────────────────────────────
@@ -876,6 +887,19 @@ window.LECTURNOTE_COMMANDS = {
     'def':    ':::definition\n**Definition.** \n:::',
     'matrix': '$$(mat(2x2))$$',
     'cases':  '$$(\\begin{cases} f_1 & \\text{if } c_1 \\\\ f_2 & \\text{if } c_2 \\end{cases})$$',
+    // Chemistry
+    'water':      '$(chem(H2O))$',
+    'hydronium':  '$(chem(H3O+))$',
+    'hydroxide':  '$(chem(OH-))$',
+    'ammonia':    '$(chem(NH3))$',
+    'ammonium':   '$(chem(NH4+))$',
+    'sulfate':    '$(chem(SO4^2-))$',
+    'phosphate':  '$(chem(PO4^3-))$',
+    'nitrate':    '$(chem(NO3-))$',
+    'carbonate':  '$(chem(CO3^2-))$',
+    'bicarb':     '$(chem(HCO3-))$',
+    'glucose':    '$(chem(C6H12O6))$',
+    'atp':        '$(chem(C10H16N5O13P3))$',
     // General
     'todo':   '- [ ] ',
     'date':   '', // filled dynamically
@@ -1418,6 +1442,23 @@ function injectExerciseRefs(html) {
   });
 }
 
+// Helper: run the math-safe render pipeline on a piece of markdown
+// (used by boxes, exercises, and anywhere else that renders markdown mid-pipeline)
+function safeRender(md) {
+  if (!md) return '';
+  const savedPending = pendingMath;
+  pendingMath = [];
+  const extracted = extractMath(md);
+  const local = pendingMath;
+  pendingMath = savedPending;
+  let html = marked.parse(extracted.replace(/MATHBLOCK_(\d+)_END/g, 'LOCALMATH_$1_END'));
+  html = html.replace(/LOCALMATH_(\d+)_END/g, (_, idx) => {
+    const item = local[parseInt(idx)];
+    return item ? renderMath(compileMath(item.tex), item.display) : '';
+  });
+  return processAnchors(html);
+}
+
 function renderExercisesSection() {
   const section = document.getElementById('exercises-section');
   const list    = document.getElementById('exercises-list');
@@ -1430,10 +1471,8 @@ function renderExercisesSection() {
   section.classList.remove('empty');
 
   list.innerHTML = pendingExercises.map(ex => {
-    const problemHtml  = processMath(processAnchors(marked.parse(ex.problem || '')));
-    const solutionHtml = ex.solution
-      ? processMath(processAnchors(marked.parse(ex.solution)))
-      : null;
+    const problemHtml  = safeRender(ex.problem || '');
+    const solutionHtml = ex.solution ? safeRender(ex.solution) : null;
     return `<div class="exercise-card" id="${ex.id}">
       <div class="exercise-card-header">
         <span class="exercise-card-num">Exercise ${ex.num}</span>
@@ -1542,10 +1581,9 @@ function injectBlocks(html) {
   for (const block of pendingBlocks) {
     let blockHtml;
     if (block.rawBody !== undefined) {
-      // Box: render body now so math/anchors inside boxes work correctly
-      let inner = marked.parse(block.rawBody);
-      inner = processMath(inner);
-      inner = processAnchors(inner);
+      // Box: render body now so math/anchors inside boxes work correctly.
+      // safeRender extracts math before marked touches the backslashes.
+      let inner = safeRender(block.rawBody);
       inner = processTags(inner);
       blockHtml = `<div class="note-box ${block.bt.cls}"><div class="box-label">${block.bt.label}</div>${inner}</div>`;
     } else {
@@ -1639,7 +1677,81 @@ function _applySymbols(src) {
   }
   return src;
 }
+// Convert `^(...)` or `_(...)` into `^{...}` or `_{...}` with balanced parens.
+// This lets you write x^(a+b) → x^{a+b}, x_(k+1) → x_{k+1}, etc.
+// Only touches parens immediately after the trigger char; other parens are left alone.
+function _bracesFromParens(src, trigger) {
+  let out = '', i = 0;
+  while (i < src.length) {
+    if (src[i] === trigger && src[i + 1] === '(') {
+      let depth = 1, j = i + 2;
+      while (j < src.length && depth > 0) {
+        if (src[j] === '(') depth++;
+        else if (src[j] === ')') depth--;
+        if (depth === 0) break;
+        j++;
+      }
+      if (depth === 0) {
+        out += trigger + '{' + src.substring(i + 2, j) + '}';
+        i = j + 1;
+        continue;
+      }
+    }
+    out += src[i];
+    i++;
+  }
+  return out;
+}
+
+// Format a chemistry formula: digits after letters become subscripts,
+// trailing +/- (optionally with a number) become a charge superscript.
+// Examples: H2O → H_{2}O · H3O+ → H_{3}O^{+} · SO4^2- → SO_{4}^{2-} · Ca2+ → Ca^{2+}
+// (charge suffixes take precedence over the "2" being a subscript when they're at the end)
+function _formatChem(formula) {
+  let charge = '';
+
+  // Case A: explicit ^-superscript charge → keep it
+  let m = formula.match(/^(.*?)\^([+\-\d]+)$/);
+  if (m) {
+    formula = m[1];
+    charge  = `^{${m[2]}}`;
+  }
+  // Case B: implicit trailing +/- without leading digit → charge is just +/-
+  else if (m = formula.match(/^(.*[A-Za-z])([+\-])$/)) {
+    formula = m[1];
+    charge  = `^{${m[2]}}`;
+  }
+  // Case C: implicit trailing digit+charge, like Ca2+, Fe3+
+  //   Only treat digit as charge magnitude when the compound has ONE element group
+  //   (a single capital letter optionally followed by lowercase letters).
+  //   Otherwise the digit is a subscript (e.g. NH4+, SO4- would be SO4^-).
+  else if (m = formula.match(/^(.*[A-Za-z])(\d+)([+\-])$/)) {
+    const base = m[1];
+    // Count element groups (capital letter + optional lowercase letters)
+    const elements = base.match(/[A-Z][a-z]*/g) || [];
+    if (elements.length === 1) {
+      // Single element like Ca2+ — digit is charge magnitude
+      formula = base;
+      charge  = `^{${m[2]}${m[3]}}`;
+    } else {
+      // Multi-element like NH4+ — digit is subscript, +/- alone is charge
+      formula = base + m[2];
+      charge  = `^{${m[3]}}`;
+    }
+  }
+
+  // Digits after letters become subscripts
+  formula = formula.replace(/([A-Za-z\)])(\d+)/g, '$1_{$2}');
+  return formula + charge;
+}
+
 function compileMath(src) {
+  // Preprocess: exponents/subscripts with parens → braces
+  // x^(a+b) → x^{a+b}, x_(k+1) → x_{k+1}
+  // Balances parens so nested cases like x^((a+b)/c) work correctly.
+  src = _bracesFromParens(src, '^');
+  src = _bracesFromParens(src, '_');
+
   let prev, safety=0;
   do {
     prev=src;
@@ -1655,6 +1767,10 @@ function compileMath(src) {
     src=_applyFunc1(src,'floor',x=>`\\lfloor ${x} \\rfloor`);
     src=_applyFunc1(src,'ceil',x=>`\\lceil ${x} \\rceil`);
     src=_applyFunc1(src,'text',x=>`\\text{${x}}`);
+    // chem(formula) — chemistry auto-formatter
+    // Turns letters+digits+charges into properly subscripted/superscripted output.
+    // Examples: chem(H2O) → H_2O   chem(H3O+) → H_3O^+   chem(SO4^2-) → SO_4^{2-}
+    src=_applyFunc1(src,'chem',x=>_formatChem(x));
     src=_applyFunc2(src,'binom',(n,k)=>`\\binom{${n}}{${k}}`);
     src=_applyFunc2(src,'obrace',(x,l)=>`\\overbrace{${x}}^{\\text{${l}}}`);
     src=_applyFunc2(src,'ubrace',(x,l)=>`\\underbrace{${x}}_{\\text{${l}}}`);
@@ -1668,13 +1784,23 @@ function compileMath(src) {
          .replace(/\blim\b(?!_)/g,'\\lim').replace(/\bprod\b(?!_)/g,'\\prod');
   src=src.replace(/\bmat\((\d+)x(\d+)\)\[([^\]]*)\]/g,(_,r,c,vals)=>_buildMatrixFilled(+r,+c,vals));
   src=src.replace(/\bmat\((\d+)x(\d+)\)/g,(_,r,c)=>_buildMatrix(+r,+c));
-  src=src.replace(/\bcases\b/g,`\\begin{cases} f_1 & \\text{if } c_1 \\\\ f_2 & \\text{if } c_2 \\end{cases}`);
+  // Only match `cases` when NOT inside \begin{...} or \end{...}
+  src=src.replace(/(^|[^{])\bcases\b/g,(m,pre)=> pre + `\\begin{cases} f_1 & \\text{if } c_1 \\\\ f_2 & \\text{if } c_2 \\end{cases}`);
   src=_applySymbols(src);
   return src;
 }
 function renderMath(tex, display) {
-  try { return katex.renderToString(tex,{displayMode:display,throwOnError:false,output:'html'}); }
-  catch(e) { return `<span style="color:var(--coral);font-size:11px">[math: ${escHtml(e.message)}]</span>`; }
+  try {
+    return katex.renderToString(tex, {
+      displayMode: display,
+      throwOnError: false,
+      output: 'htmlAndMathml',
+      strict: 'ignore',   // silence LaTeX-compat warnings for user-friendly UX
+      trust: true,        // allow \href, \htmlClass etc if you extend later
+    });
+  } catch(e) {
+    return `<span style="color:var(--coral);font-size:11px">[math: ${escHtml(e.message)}]</span>`;
+  }
 }
 function processMath(html) {
   function unesc(s) {
@@ -1723,6 +1849,32 @@ previewInner.addEventListener('click', e => {
 marked.use({ breaks: true, gfm: true });
 
 let pendingCode = [];
+let pendingMath = [];  // [{tex, display}] — extracted before marked to preserve raw backslashes
+
+function extractMath(md) {
+  pendingMath = [];
+  // Extract display math first (longer delimiters first to avoid nesting issues)
+  md = md.replace(/\$\$\(([\s\S]*?)\)\$\$/g, (_, inner) => {
+    const idx = pendingMath.length;
+    pendingMath.push({ tex: inner, display: true });
+    return `MATHBLOCK_${idx}_END`;
+  });
+  // Extract inline math
+  md = md.replace(/\$\(([\s\S]*?)\)\$/g, (_, inner) => {
+    const idx = pendingMath.length;
+    pendingMath.push({ tex: inner, display: false });
+    return `MATHBLOCK_${idx}_END`;
+  });
+  return md;
+}
+
+function injectMath(html) {
+  return html.replace(/MATHBLOCK_(\d+)_END/g, (_, idx) => {
+    const item = pendingMath[parseInt(idx)];
+    if (!item) return '';
+    return renderMath(compileMath(item.tex), item.display);
+  });
+}
 
 function extractCodeBlocks(md) {
   pendingCode = [];
@@ -1868,16 +2020,23 @@ function wireTocLinks() {
 
 function render() {
   const md = editor.value;
-  // Pre-extract: exercises, then code, then boxes (sequence/graph inside parseBoxes)
-  // Also replace %index% with a placeholder token before marked runs
+  // Pre-extract order matters:
+  //   1. code blocks first (contain math-like syntax we shouldn't touch)
+  //   2. exercises (their bodies get processed via safeRender later)
+  //   3. boxes (their bodies get processed via safeRender later)
+  //   4. math (from what's left in the outer document)
+  // This way math inside boxes/exercises is preserved as raw text in
+  // rawBody / ex.problem / ex.solution, and safeRender extracts + renders it there.
   const mdWithToken = md.replace(/%index%/g, '\nINDEXTOKEN\n');
   const md1 = extractExercises(mdWithToken);
   const md2 = extractCodeBlocks(md1);
-  let html = marked.parse(parseBoxes(md2));
-  html = processMath(html);
+  const md3 = parseBoxes(md2);                 // boxes extracted before math
+  const md4 = extractMath(md3);                // only outer-document math left
+  let html = marked.parse(md4);
+  html = injectMath(html);                     // outer math back in
   html = processAnchors(html);
   html = processTags(html);
-  html = injectBlocks(html);
+  html = injectBlocks(html);                   // boxes injected — their bodies use safeRender
   html = injectAllCodeBlocks(html);
   html = injectExerciseRefs(html);
   // Strip any <p> wrapper marked added around INDEXTOKEN
@@ -2274,14 +2433,17 @@ function insertCasesFromEditor() {
   if (!rows.length) { closeCasesEditor(); return; }
 
   // Build LaTeX cases block. Each row: expr & \text{if } cond
+  // Note: we output `\\\\` (4 backslashes in source → 4 chars in string) because
+  // marked.parse() collapses `\\` → `\`, so we need doubled escapes to survive
+  // and reach KaTeX as `\\` (LaTeX line break).
   const body = rows.map(r => {
     const expr = r.expr.trim() || '\\phantom{x}';
     const cond = r.cond.trim();
     return cond
       ? `${expr} & \\text{if } ${cond}`
       : expr;
-  }).join(' \\\\ ');
-  const latex = `$$(\\begin{cases} ${body} \\end{cases})$$`;
+  }).join(' \\\\\\\\ ');
+  const latex = `$$(\\begin{dcases} ${body} \\end{dcases})$$`;
 
   closeCasesEditor();
 

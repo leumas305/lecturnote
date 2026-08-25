@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lecturnote — Documentation</title>
+<link rel="icon" type="image/png" href="../assets/icon.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400;1,9..144,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/marked@11.1.0/marked.min.js"></script>
+<style>
+:root {
+  --bg: #0f0f13;
+  --surface: #16161d;
+  --surface2: #1e1e28;
+  --surface3: #262633;
+  --border: #1e1e28;
+  --border2: #2a2a38;
+  --text: #d4d4dc;
+  --text2: #9a9ab0;
+  --text3: #5a5a72;
+  --accent: #7c6af7;
+  --accent2: #a599ff;
+  --teal: #38c4be;
+  --amber: #f5b842;
+  --coral: #ff8a80;
+  --blue: #4a9eff;
+  --green: #4eca8b;
+  --pink: #f5a0c0;
+  --mono: 'JetBrains Mono', monospace;
+  --serif: 'Fraunces', Georgia, serif;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* ── Layout ── */
+.layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 24px 20px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+.sidebar-title {
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--accent2);
+  margin-bottom: 4px;
+  letter-spacing: -0.5px;
+}
+.sidebar-title em {
+  font-style: italic;
+  color: var(--accent);
+}
+.sidebar-eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+.nav-group {
+  margin-bottom: 22px;
+}
+.nav-header {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  padding-left: 8px;
+}
+.nav-item {
+  display: block;
+  padding: 4px 8px;
+  color: var(--text2);
+  text-decoration: none;
+  font-family: var(--mono);
+  font-size: 12px;
+  border-radius: 4px;
+  transition: color 0.1s, background 0.1s;
+}
+.nav-item:hover {
+  color: var(--accent2);
+  background: var(--surface2);
+}
+.nav-item.active {
+  color: var(--accent2);
+  background: var(--surface2);
+  font-weight: 500;
+}
+
+/* ── Main content ── */
+.content {
+  padding: 48px 60px 120px;
+  max-width: 900px;
+  width: 100%;
+}
+.hero {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 32px;
+  margin-bottom: 40px;
+}
+.hero-title {
+  font-family: var(--serif);
+  font-size: 56px;
+  font-weight: 400;
+  color: var(--accent2);
+  letter-spacing: -1.5px;
+  line-height: 1;
+  margin: 0 0 6px;
+}
+.hero-title em {
+  font-style: italic;
+  color: var(--accent);
+}
+.hero-sub {
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--text3);
+  font-size: 16px;
+  margin: 0 0 20px;
+}
+.hero-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pill {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid;
+  letter-spacing: 0.3px;
+}
+.pill-purple { color: var(--accent2); border-color: rgba(124,106,247,0.35); background: rgba(124,106,247,0.08); }
+.pill-teal   { color: var(--teal);    border-color: rgba(56,196,190,0.35);  background: rgba(56,196,190,0.08); }
+.pill-amber  { color: var(--amber);   border-color: rgba(245,184,66,0.35);  background: rgba(245,184,66,0.08); }
+.pill-blue   { color: var(--blue);    border-color: rgba(74,158,255,0.35);  background: rgba(74,158,255,0.08); }
+.pill-green  { color: var(--green);   border-color: rgba(78,202,139,0.35);  background: rgba(78,202,139,0.08); }
+
+/* ── Typography ── */
+h1, h2, h3, h4 {
+  font-family: var(--serif);
+  color: var(--accent2);
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  scroll-margin-top: 24px;
+}
+h1 { font-size: 36px; margin: 48px 0 16px; }
+h2 { font-size: 26px; margin: 40px 0 14px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--accent); }
+h3 { font-size: 20px; margin: 28px 0 10px; color: var(--teal); }
+h4 { font-size: 16px; margin: 20px 0 8px; color: var(--amber); font-family: var(--mono); font-weight: 500; letter-spacing: 0; }
+p { margin: 12px 0; color: var(--text); }
+p code, li code, td code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+  background: var(--surface2);
+  color: var(--amber);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--border2);
+}
+ul, ol { padding-left: 22px; }
+li { margin: 4px 0; }
+
+/* ── Tables ── */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 16px 0;
+  font-size: 14px;
+}
+th, td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+th {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text3);
+  letter-spacing: 1px;
+  font-weight: 500;
+}
+td {
+  font-family: var(--serif);
+  color: var(--text);
+}
+tbody tr:hover { background: var(--surface2); }
+
+/* ── Code blocks ── */
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+}
+pre code { color: var(--text); }
+pre .kw { color: var(--accent2); }
+pre .str { color: var(--green); }
+pre .num { color: var(--amber); }
+pre .cmt { color: var(--text3); font-style: italic; }
+
+/* ── Try it live blocks ── */
+.tryit {
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  margin: 20px 0;
+  background: var(--surface);
+  overflow: hidden;
+}
+.tryit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+.tryit-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.tryit-btn {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  background: transparent;
+  border: 1px solid var(--border2);
+  padding: 3px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: color 0.1s, border-color 0.1s;
+}
+.tryit-btn:hover {
+  color: var(--accent2);
+  border-color: var(--accent);
+}
+.tryit-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.tryit-input {
+  background: var(--surface);
+  border: none;
+  border-right: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 14px 16px;
+  outline: none;
+  resize: none;
+  min-height: 100px;
+  caret-color: var(--accent2);
+}
+.tryit-input:focus {
+  background: rgba(124,106,247,0.03);
+}
+.tryit-output {
+  padding: 14px 16px;
+  background: var(--bg);
+  overflow-x: auto;
+  min-height: 100px;
+  color: var(--text);
+  font-family: var(--serif);
+}
+.tryit-output p:first-child { margin-top: 0; }
+.tryit-output p:last-child { margin-bottom: 0; }
+.tryit-output strong { color: var(--amber); font-weight: 600; }
+.tryit-output em { color: var(--text2); font-style: italic; }
+.tryit-output strong em, .tryit-output em strong { color: var(--coral); font-weight: 600; font-style: italic; }
+
+/* ── Note boxes (matching the app) ── */
+.note-box {
+  border-left: 3px solid;
+  padding: 12px 16px;
+  border-radius: 4px;
+  margin: 16px 0;
+  background: var(--surface2);
+}
+.box-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+.note-box.note-def       { border-color: var(--green);   background: rgba(78,202,139,0.06); }
+.note-box.note-def       .box-label { color: var(--green); }
+.note-box.note-thm       { border-color: var(--accent2); background: rgba(165,153,255,0.06); }
+.note-box.note-thm       .box-label { color: var(--accent2); }
+.note-box.note-ex        { border-color: var(--blue);    background: rgba(74,158,255,0.06); }
+.note-box.note-ex        .box-label { color: var(--blue); }
+.note-box.note-warn      { border-color: var(--amber);   background: rgba(245,184,66,0.06); }
+.note-box.note-warn      .box-label { color: var(--amber); }
+.note-box.note-tip       { border-color: var(--teal);    background: rgba(56,196,190,0.06); }
+.note-box.note-tip       .box-label { color: var(--teal); }
+
+/* ── Shortcut key display ── */
+.kbd {
+  font-family: var(--mono);
+  font-size: 10px;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: 3px;
+  padding: 2px 6px;
+  color: var(--accent2);
+  white-space: nowrap;
+}
+
+/* ── Download button ── */
+.download-btn {
+  display: inline-block;
+  background: var(--accent);
+  color: white;
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 10px 20px;
+  border-radius: 6px;
+  text-decoration: none;
+  margin: 8px 8px 8px 0;
+  transition: background 0.1s;
+  border: 1px solid var(--accent);
+}
+.download-btn:hover {
+  background: var(--accent2);
+}
+.download-btn.secondary {
+  background: transparent;
+  color: var(--accent2);
+}
+.download-btn.secondary:hover {
+  background: rgba(124,106,247,0.1);
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { position: relative; height: auto; }
+  .content { padding: 32px 24px 80px; }
+  .hero-title { font-size: 40px; }
+  .tryit-body { grid-template-columns: 1fr; }
+  .tryit-input { border-right: none; border-bottom: 1px solid var(--border); }
+}
+
+/* Katex overrides for dark theme */
+.katex { color: var(--text); }
+.katex .mord { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-title">lectur<em>note</em></div>
+    <div class="sidebar-eyebrow">documentation</div>
+
+    <div class="nav-group">
+      <div class="nav-header">Start</div>
+      <a href="#introduction" class="nav-item">Introduction</a>
+      <a href="#download" class="nav-item">Download</a>
+      <a href="#getting-started" class="nav-item">Getting started</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-header">Basics</div>
+      <a href="#shortcuts" class="nav-item">Keyboard shortcuts</a>
+      <a href="#formatting" class="nav-item">Text formatting</a>
+      <a href="#boxes" class="nav-item">Colored boxes</a>
+      <a href="#toc" class="nav-item">Table of contents</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-header">Math</div>
+      <a href="#math-basics" class="nav-item">Basics</a>
+      <a href="#math-fractions" class="nav-item">Fractions &amp; operators</a>
+      <a href="#math-symbols" class="nav-item">Symbols &amp; Greek</a>
+      <a href="#math-matrices" class="nav-item">Matrices</a>
+      <a href="#math-cases" class="nav-item">Cases</a>
+      <a href="#math-chemistry" class="nav-item">Chemistry</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-header">Science</div>
+      <a href="#sequences" class="nav-item">Sequence blocks</a>
+      <a href="#graphs" class="nav-item">Graphs &amp; concept maps</a>
+      <a href="#exercises" class="nav-item">Exercises</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-header">Workflow</div>
+      <a href="#autocorrect" class="nav-item">Autocorrect</a>
+      <a href="#snippets" class="nav-item">Snippets</a>
+      <a href="#pdf-export" class="nav-item">PDF export</a>
+      <a href="#customisation" class="nav-item">Customisation</a>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-header">Links</div>
+      <a href="https://github.com/leumas305/lecturnote" class="nav-item" target="_blank">GitHub repo</a>
+      <a href="https://github.com/leumas305/lecturnote/releases/latest" class="nav-item" target="_blank">Latest release</a>
+      <a href="https://github.com/leumas305/lecturnote/issues" class="nav-item" target="_blank">Report issue</a>
+    </div>
+  </aside>
+
+  <main class="content">
+    <section class="hero">
+      <h1 class="hero-title" style="border:none;padding-top:0;margin-top:0">lectur<em>note</em></h1>
+      <p class="hero-sub">keyboard-first notes for science &amp; mathematics</p>
+      <div class="hero-pills">
+        <span class="pill pill-purple">live math preview</span>
+        <span class="pill pill-teal">hunspell EN/ES</span>
+        <span class="pill pill-blue">sequence blocks</span>
+        <span class="pill pill-amber">concept maps</span>
+        <span class="pill pill-green">exercises + TOC</span>
+        <span class="pill pill-purple">chemistry formulas</span>
+      </div>
+    </section>
+
+    <h1 id="introduction">Introduction</h1>
+    <p>lecturnote is a keyboard-first, offline note-taking app built for computational biology, bioinformatics, and mathematics. It's designed for the moment when you're taking rapid lecture notes and need to insert a matrix, a fraction, a sequence alignment, or a concept map without breaking your typing flow.</p>
+    <p>Every action has a keyboard shortcut. Math renders live as you type using KaTeX. Notes are stored locally, never sent anywhere.</p>
+
+    <div class="note-box note-tip">
+      <div class="box-label">Try it live</div>
+      <p>Every "Try it live" block on this page is fully editable — type in the left pane and see the rendered output on the right. It's the same syntax the real app uses.</p>
+    </div>
+
+    <h1 id="download">Download</h1>
+    <p>Grab the latest release for your platform. No Node.js, terminal, or setup needed.</p>
+    <p>
+      <a href="https://github.com/leumas305/lecturnote/releases/latest" class="download-btn">Download latest release</a>
+      <a href="https://github.com/leumas305/lecturnote" class="download-btn secondary">View source</a>
+    </p>
+    <table>
+      <thead><tr><th>Platform</th><th>File</th><th>How to install</th></tr></thead>
+      <tbody>
+        <tr><td>Linux</td><td><code>.AppImage</code></td><td><code>chmod +x</code> then double-click</td></tr>
+        <tr><td>Linux</td><td><code>.deb</code></td><td><code>sudo dpkg -i lecturnote.deb</code></td></tr>
+        <tr><td>macOS</td><td><code>.dmg</code></td><td>Open and drag to Applications</td></tr>
+        <tr><td>Windows</td><td><code>.exe</code></td><td>Run installer</td></tr>
+      </tbody>
+    </table>
+
+    <h1 id="getting-started">Getting started</h1>
+    <p>On first launch you'll see an empty note. Start typing markdown — it renders in the right pane in real time. To insert a math expression, wrap it in <code>$( )$</code> for inline or <code>$$( )$$</code> for display mode. Alternatively press <span class="kbd">$</span> and lecturnote will insert the delimiters for you with your cursor placed inside, ready to type.</p>
+
+    <div class="tryit" data-example="# My first note
+
+Here's an inline formula: $(x^2 + y^2 = z^2)$
+
+And a display formula:
+
+$$((-b pm sqrt(b^2 - 4ac))/(2a))$$
+
+Nice, right?"></div>
+
+    <h1 id="shortcuts">Keyboard shortcuts</h1>
+    <p>Everything in the app has a shortcut. All are remappable via the settings panel (<span class="kbd">Ctrl+,</span>). You can change both the key and the modifier family (Ctrl / Ctrl+Alt / Ctrl+Shift) per action.</p>
+
+    <h3>Navigation &amp; UI</h3>
+    <table>
+      <thead><tr><th>Shortcut</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td><span class="kbd">Ctrl+G</span></td><td>Section jump palette (includes ▲ Beginning and ▼ End of file)</td></tr>
+        <tr><td><span class="kbd">Ctrl+Alt+O</span></td><td>Toggle sidebar — arrow keys navigate notes, Enter opens</td></tr>
+        <tr><td><span class="kbd">Ctrl+Alt+Z</span></td><td>Toggle scratchpad (not saved)</td></tr>
+        <tr><td><span class="kbd">Ctrl+,</span></td><td>Open shortcut settings panel</td></tr>
+        <tr><td><span class="kbd">Ctrl+Alt+M</span></td><td>New note (focuses title, press Enter to jump to editor)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Text formatting</h3>
+    <table>
+      <thead><tr><th>Shortcut</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td><span class="kbd">Ctrl+B</span></td><td>Bold (toggle — press again to remove)</td></tr>
+        <tr><td><span class="kbd">Ctrl+I</span></td><td>Italic</td></tr>
+        <tr><td><span class="kbd">Ctrl+`</span></td><td>Inline code</td></tr>
+        <tr><td><span class="kbd">$</span></td><td>Inline math — inserts <code>$(  )$</code> with cursor inside</td></tr>
+        <tr><td><span class="kbd">$</span> (in empty math)</td><td>Upgrades to display math <code>$$(  )$$</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3>Colored boxes</h3>
+    <table>
+      <thead><tr><th>Shortcut</th><th>Box type</th></tr></thead>
+      <tbody>
+        <tr><td><span class="kbd">Ctrl+Alt+E</span></td><td>Example (blue)</td></tr>
+        <tr><td><span class="kbd">Ctrl+Alt+D</span></td><td>Definition (green)</td></tr>
+        <tr><td><span class="kbd">Ctrl+Alt+W</span></td><td>Theorem (purple)</td></tr>
+        <tr><td><span class="kbd">Ctrl+Alt+P</span></td><td>Proof (teal)</td></tr>
+        <tr><td><span class="kbd">Ctrl+Alt+N</span></td><td>Note (pink)</td></tr>
+        <tr><td><span class="kbd">Ctrl+Alt+!</span></td><td>Warning (amber)</td></tr>
+        <tr><td><span class="kbd">Ctrl+Alt+Q</span></td><td>Sequence block (DNA/RNA/AA)</td></tr>
+        <tr><td><span class="kbd">Ctrl+Alt+X</span></td><td>Exercise (with solution toggle)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Other</h3>
+    <table>
+      <thead><tr><th>Shortcut</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td><span class="kbd">Ctrl+Alt+Y</span></td><td>Visual table editor</td></tr>
+        <tr><td><span class="kbd">Ctrl+Alt+J</span></td><td>Code block language picker</td></tr>
+        <tr><td><span class="kbd">Ctrl+Alt+K</span></td><td>Anchor link picker</td></tr>
+        <tr><td><span class="kbd">Ctrl+Shift+D</span></td><td>Add selected word to spellcheck dictionary</td></tr>
+        <tr><td><span class="kbd">Ctrl+Shift+S</span></td><td>Export to PDF</td></tr>
+        <tr><td><span class="kbd">Ctrl+S</span></td><td>Save (auto-saves anyway)</td></tr>
+      </tbody>
+    </table>
+
+    <h1 id="formatting">Text formatting</h1>
+    <p>lecturnote uses standard markdown for basic formatting. Bold is <code>**bold**</code>, italic is <code>*italic*</code>. Bold+italic combined shows in a distinct color so you can quickly tell it apart from either alone.</p>
+    <div class="tryit" data-example="This is **bold text** and this is *italic text*.
+
+You can combine them: this is ***bold and italic***.
+
+Lists work too:
+- Point one
+- Point two
+- Point three
+
+## Headings get auto-numbered
+### Sub-headings too"></div>
+
+    <h1 id="boxes">Colored boxes</h1>
+    <p>Semantic boxes are what makes math notes actually scannable. Wrap content in <code>:::type</code> ... <code>:::</code> and it renders as a colored block. Boxes support math, anchors, and everything else inside them.</p>
+
+    <div class="tryit" data-example=":::definition
+A **prime number** is a natural number greater than 1 that has no positive divisors other than 1 and itself.
+:::
+
+:::theorem
+There are infinitely many primes.
+:::
+
+:::proof
+Suppose there are finitely many primes $(p_1, p_2, ..., p_n)$. Consider $(N = p_1 cdot p_2 cdot ... cdot p_n + 1)$. Then $(N)$ is either prime, or divisible by a prime not in the list. Either way, contradiction.
+:::"></div>
+
+    <h1 id="toc">Table of contents</h1>
+    <p>Write <code>%index%</code> anywhere in your note and press Space or Enter. lecturnote inserts a clickable table of contents built from all your <code>##</code>, <code>###</code>, and <code>####</code> headings. Headings are also auto-numbered in the preview (1., 1.1, 1.1.1) while your raw markdown stays clean.</p>
+
+    <h1 id="math-basics">Math basics</h1>
+    <p>Math delimiters use <strong>parentheses inside dollar signs</strong> — this makes the math clearly bounded and easier to type than raw LaTeX:</p>
+    <ul>
+      <li><code>$(  )$</code> — inline math, flows with text</li>
+      <li><code>$$(  )$$</code> — display math, centered on its own line</li>
+    </ul>
+    <p>Press <span class="kbd">$</span> anywhere in the editor to insert the delimiters with your cursor placed inside. Press <span class="kbd">$</span> again while inside an empty math block to upgrade to display mode.</p>
+
+    <div class="tryit" data-example="Inline: $(a^2 + b^2 = c^2)$
+
+Display:
+$$(sum(i=1)(n) i = (n(n+1))/(2))$$
+
+Chained equations:
+$$((d)/(dx) e^x = e^x)$$"></div>
+
+    <h1 id="math-fractions">Fractions and operators</h1>
+    <p>Fractions use <code>(numerator)/(denominator)</code>. Big operators like sums and integrals take their bounds in parentheses.</p>
+    <div class="tryit" data-example="Fractions:
+$$( (1 + x)/(1 - x) )$$
+
+Nested:
+$$( (a^2 + b^2)/(sqrt(c^2 + d^2)) )$$
+
+Sums and integrals:
+$$( sum(k=0)(n) k^2 = (n(n+1)(2n+1))/(6) )$$
+
+$$( int(0)(pi) sin(x) , dx = 2 )$$
+
+Products:
+$$( prod(k=1)(n) k = n! )$$
+
+Limits:
+$$( lim(x->0) (sin(x))/(x) = 1 )$$"></div>
+
+    <h1 id="math-symbols">Symbols and Greek letters</h1>
+    <p>Type the name of any Greek letter to get it. Capitalize for uppercase Greek. Common operators and set symbols also have short names.</p>
+    <div class="tryit" data-example="Greek letters: $(alpha, beta, gamma, delta, Sigma, Omega, Phi)$
+
+Number sets: $(RR, ZZ, QQ, NN, CC)$
+
+Operators: $(x cdot y, x xx y, x pm y, x approx y)$
+
+Relations: $(a leq b, a geq b, a neq b, a in A, A subset B)$
+
+Logic: $(forall x exists y : P(x, y) implies Q)$
+
+Arrows: $(x -> y, x <-> y, x => y, x <=> y)$
+
+Constants: $$(NA = 6.022 xx 10^(23))$$"></div>
+
+    <h1 id="math-matrices">Matrices</h1>
+    <p>Use <code>mat(RxC)</code> for an empty matrix or <code>mat(RxC)[values]</code> for a filled one. Values fill left-to-right, top-to-bottom.</p>
+    <div class="tryit" data-example="Identity:
+$$( mat(3x3)[1, 0, 0, 0, 1, 0, 0, 0, 1] )$$
+
+Rotation:
+$$( mat(2x2)[cos(theta), -sin(theta), sin(theta), cos(theta)] )$$
+
+With fractions:
+$$( mat(2x2)[(1)/(2), (1)/(3), (1)/(4), (1)/(5)] )$$"></div>
+
+    <h1 id="math-cases">Cases (piecewise functions)</h1>
+    <p>Type <code>cases</code> and press <span class="kbd">Tab</span> — a visual editor opens with two columns per row (expression + condition). Use <span class="kbd">Tab</span> to move between cells, <span class="kbd">Enter</span> to add a new row below, <span class="kbd">Ctrl+Enter</span> to insert, and <span class="kbd">Esc</span> to cancel.</p>
+    <div class="tryit" data-example="$$( \begin{dcases} 2x & \text{if } x > 0 \\ 0 & \text{if } x = 0 \\ -2x & \text{if } x < 0 \end{dcases} )$$"></div>
+
+    <h1 id="math-chemistry">Chemistry</h1>
+    <p>Use <code>chem(formula)</code> to auto-format element subscripts and charges. Digits after letters become subscripts. Trailing <code>+</code>/<code>-</code> becomes the charge.</p>
+    <div class="tryit" data-example="Water: $(chem(H2O))$
+
+Hydronium ion: $(chem(H3O+))$
+
+Ammonium: $(chem(NH4+))$
+
+Sulfate (explicit charge): $(chem(SO4^2-))$
+
+Calcium ion: $(chem(Ca2+))$
+
+Glucose: $(chem(C6H12O6))$
+
+Reaction:
+$$( chem(C6H12O6) + 6 chem(O2) yields 6 chem(CO2) + 6 chem(H2O) )$$"></div>
+
+    <p>Chemistry snippets — type these and press <span class="kbd">Tab</span>: <code>water</code>, <code>hydronium</code>, <code>hydroxide</code>, <code>ammonia</code>, <code>ammonium</code>, <code>sulfate</code>, <code>phosphate</code>, <code>nitrate</code>, <code>carbonate</code>, <code>bicarb</code>, <code>glucose</code>, <code>atp</code>.</p>
+
+    <p>Physics constants: <code>NA</code> or <code>avogadro</code>, <code>planck</code>, <code>boltz</code>, <code>echarge</code>, <code>lightspeed</code>.</p>
+
+    <h1 id="sequences">Sequence blocks</h1>
+    <p>Wrap biological sequences in a <code>:::sequence</code> block. The first line sets the type (<code>DNA</code>, <code>RNA</code>, or <code>AA</code>). Bases get color-coded automatically.</p>
+    <p><strong>DNA:</strong> A=green, T=red, G=amber, C=blue. <strong>RNA:</strong> same but U replaces T. <strong>Amino acids:</strong> colored by chemistry class (hydrophobic, polar, charged).</p>
+    <p>FASTA headers (<code>&gt;seq_id</code>) render in muted grey.</p>
+
+    <h1 id="graphs">Graphs and concept maps</h1>
+    <p>Draw layered graphs using a simple text syntax. Direction can be <code>LR</code> (default), <code>TD</code>, <code>RL</code>, or <code>BT</code>. Node styling: wrap the label in <code>**text**</code> for bold amber, or <code>*text*</code> for italic teal.</p>
+    <p>Example syntax:</p>
+    <pre>:::graph LR
+a: Node A
+b: **Important**
+c: *Optional*
+
+a -> b : label
+a --> c
+b -- c
+:::</pre>
+    <p><strong>Edge types:</strong></p>
+    <table>
+      <thead><tr><th>Syntax</th><th>Style</th></tr></thead>
+      <tbody>
+        <tr><td><code>a -> b</code></td><td>Directed arrow</td></tr>
+        <tr><td><code>a --> b</code></td><td>Bold directed arrow</td></tr>
+        <tr><td><code>a -- b</code></td><td>Undirected line</td></tr>
+        <tr><td><code>a -.-> b</code></td><td>Dashed arrow</td></tr>
+        <tr><td><code>a -> b : label</code></td><td>Any type with label</td></tr>
+      </tbody>
+    </table>
+    <p>Layout is computed automatically using the Sugiyama algorithm (dagre). Type <code>graph</code> + <span class="kbd">Tab</span> for a starter template.</p>
+
+    <h1 id="exercises">Exercises</h1>
+    <p>Wrap problems in an <code>:::exercise Name</code> block with a <code>:::solution</code> section inside:</p>
+    <pre>:::exercise Prove the Pythagorean theorem
+State the problem clearly here.
+:::solution
+Full solution goes here.
+:::</pre>
+    <p>lecturnote inserts a reference chip at the position and collects all exercises at the bottom of the preview. Solutions are hidden by default with a toggle; when exporting to PDF all solutions are always visible.</p>
+
+    <h1 id="autocorrect">Autocorrect</h1>
+    <p>Real Hunspell spellchecking. Fires on <span class="kbd">Space</span> or <span class="kbd">Enter</span> after a mistyped word. A green flash means a correction was applied.</p>
+    <p><strong>Two layers:</strong></p>
+    <ol>
+      <li><strong>Explicit dictionary</strong> — the <code>AUTOCORRECT</code> map in the source. Exact match, always wins over probabilistic suggestions. Use for domain-specific typos.</li>
+      <li><strong>Hunspell</strong> — real spell-checking with English (~49,000 words) and Spanish (~57,000 words) dictionaries including full morphology.</li>
+    </ol>
+    <p>Toggle the language via the dropdown in the top bar (EN / ES / Both / Off). Default is Off.</p>
+    <p><strong>Add your own words:</strong> select a word (or place cursor on it) and press <span class="kbd">Ctrl+Shift+D</span>. Choose which dictionary to add it to. Additions persist across restarts.</p>
+
+    <h1 id="snippets">Snippets</h1>
+    <p>Type a snippet key and press <span class="kbd">Tab</span> to expand it.</p>
+    <table>
+      <thead><tr><th>Key</th><th>Expands to</th></tr></thead>
+      <tbody>
+        <tr><td><code>pcr</code></td><td>PCR protocol template</td></tr>
+        <tr><td><code>fasta</code></td><td>FASTA format skeleton</td></tr>
+        <tr><td><code>align</code></td><td>Sequence alignment display</td></tr>
+        <tr><td><code>phylo</code></td><td>Phylogenetic tree graph</td></tr>
+        <tr><td><code>graph</code> / <code>map</code></td><td>Concept map starter</td></tr>
+        <tr><td><code>smith</code></td><td>Smith-Waterman parameters</td></tr>
+        <tr><td><code>blast</code></td><td>BLAST parameters</td></tr>
+        <tr><td><code>pf</code></td><td>Proof box</td></tr>
+        <tr><td><code>thm</code></td><td>Theorem box</td></tr>
+        <tr><td><code>def</code></td><td>Definition box</td></tr>
+        <tr><td><code>matrix</code></td><td>2×2 matrix</td></tr>
+        <tr><td><code>cases</code></td><td>Opens visual cases editor</td></tr>
+        <tr><td><code>todo</code></td><td>Checkbox item</td></tr>
+        <tr><td><code>date</code></td><td>Today's date</td></tr>
+      </tbody>
+    </table>
+
+    <h1 id="pdf-export">PDF export</h1>
+    <p>Press <span class="kbd">Ctrl+Shift+S</span> to open the print dialog — save as PDF from there. Only the preview is printed. All exercise solutions are made visible. Page breaks avoid splitting boxes, code blocks, and tables. Page size is A4 with 2cm/2.5cm margins.</p>
+
+    <h1 id="customisation">Customisation</h1>
+    <p>Open <code>index.html</code> in any text editor. The top of the <code>&lt;script&gt;</code> section has a clearly-marked commands block you can edit:</p>
+    <ul>
+      <li><code>MATH_FUNCTIONS</code> — add new structured math commands</li>
+      <li><code>MATH_SYMBOLS</code> — add new symbol shorthands</li>
+      <li><code>SNIPPETS</code> — add subject-specific text expansions</li>
+      <li><code>AUTOCORRECT</code> — add explicit typo corrections</li>
+    </ul>
+    <p>Restart the app after editing.</p>
+
+    <div class="note-box note-tip">
+      <div class="box-label">More info</div>
+      <p>Everything on this site is documented in more detail in the <a href="https://github.com/leumas305/lecturnote/blob/main/documentation.md" style="color:var(--teal)">full documentation</a> in the repo. For bugs or feature requests, open an <a href="https://github.com/leumas305/lecturnote/issues" style="color:var(--teal)">issue on GitHub</a>.</p>
+    </div>
+  </main>
+</div>
+
+<script>
+// ── Live examples renderer — exact port of the app's compiler ────────────
+// This is a byte-for-byte copy of index.html's math compiler so behavior
+// matches the app exactly. Do not modify one without the other.
+
+// MATH_SYMBOLS: same as the app
+const MATH_SYMBOLS = {
+  'alpha':'\\alpha','beta':'\\beta','gamma':'\\gamma','delta':'\\delta',
+  'epsilon':'\\epsilon','varepsilon':'\\varepsilon','zeta':'\\zeta',
+  'eta':'\\eta','theta':'\\theta','vartheta':'\\vartheta','iota':'\\iota',
+  'kappa':'\\kappa','lambda':'\\lambda','mu':'\\mu','nu':'\\nu',
+  'xi':'\\xi','pi':'\\pi','varpi':'\\varpi','rho':'\\rho','varrho':'\\varrho',
+  'sigma':'\\sigma','varsigma':'\\varsigma','tau':'\\tau',
+  'upsilon':'\\upsilon','phi':'\\phi','varphi':'\\varphi',
+  'chi':'\\chi','psi':'\\psi','omega':'\\omega',
+  'Gamma':'\\Gamma','Delta':'\\Delta','Theta':'\\Theta','Lambda':'\\Lambda',
+  'Xi':'\\Xi','Pi':'\\Pi','Sigma':'\\Sigma','Upsilon':'\\Upsilon',
+  'Phi':'\\Phi','Psi':'\\Psi','Omega':'\\Omega',
+  'RR':'\\mathbb{R}','ZZ':'\\mathbb{Z}','QQ':'\\mathbb{Q}',
+  'NN':'\\mathbb{N}','CC':'\\mathbb{C}','FF':'\\mathbb{F}',
+  'inf':'\\infty','nabla':'\\nabla','partial':'\\partial',
+  'forall':'\\forall','exists':'\\exists','nexists':'\\nexists',
+  'implies':'\\Rightarrow','iff':'\\Leftrightarrow',
+  'not':'\\neg','and':'\\land','or':'\\lor',
+  'in':'\\in','notin':'\\notin','subset':'\\subset','supset':'\\supset',
+  'subseteq':'\\subseteq','supseteq':'\\supseteq',
+  'cup':'\\cup','cap':'\\cap','emptyset':'\\emptyset','setminus':'\\setminus',
+  'pm':'\\pm','mp':'\\mp','xx':'\\times','times':'\\times','cdot':'\\cdot',
+  'circ':'\\circ','div':'\\div','oplus':'\\oplus','otimes':'\\otimes','oslash':'\\oslash',
+  'neq':'\\neq','approx':'\\approx','equiv':'\\equiv',
+  'll':'\\ll','gg':'\\gg','leq':'\\leq','geq':'\\geq',
+  '>=':'\\geq','<=':'\\leq','!=':'\\neq',
+  'sim':'\\sim','simeq':'\\simeq','cong':'\\cong','propto':'\\propto',
+  '->':'\\to','<-':'\\leftarrow','=>':'\\Rightarrow',
+  'to':'\\to','from':'\\leftarrow',
+  '<=>':'\\Leftrightarrow','~>':'\\leadsto',
+  'uparrow':'\\uparrow','downarrow':'\\downarrow',
+  'dots':'\\ldots','ldots':'\\ldots','cdots':'\\cdots',
+  'vdots':'\\vdots','ddots':'\\ddots',
+  'deg':'\\degree','prime':'\\prime','star':'\\star','dagger':'\\dagger',
+  'NA':'6.022\\times10^{23}','avogadro':'6.022\\times10^{23}',
+  'planck':'6.626\\times10^{-34}','boltz':'1.381\\times10^{-23}',
+  'echarge':'1.602\\times10^{-19}','lightspeed':'2.998\\times10^{8}',
+  'yields':'\\rightarrow','equilib':'\\rightleftharpoons',
+  'aq':'\\text{(aq)}','sol':'\\text{(s)}','liq':'\\text{(l)}','gas':'\\text{(g)}',
+};
+
+// ── Math compiler helpers (exact port from app) ──────────────────────────
+function _arg(s) {
+  s = s.trim().replace(/->/g,'\\to').replace(/=>/g,'\\Rightarrow');
+  return _applySymbols(s);
+}
+function _buildMatrix(r,c) {
+  return `\\begin{pmatrix}${Array(r).fill(null).map(()=>Array(c).fill('\\cdot').join(' & ')).join('\\\\')}\\end{pmatrix}`;
+}
+function _buildMatrixFilled(r, c, valStr) {
+  const vals = valStr.split(',').map(v => v.trim());
+  while (vals.length < r * c) vals.push('\\cdot');
+  const rows = [];
+  for (let i = 0; i < r; i++) {
+    rows.push(vals.slice(i * c, i * c + c).join(' & '));
+  }
+  return `\\begin{pmatrix}${rows.join('\\\\')}\\end{pmatrix}`;
+}
+function _balancedGroup(src, pos) {
+  let depth=0, i=pos;
+  while (i<src.length) {
+    if (src[i]==='(') depth++;
+    else if (src[i]===')') { depth--; if (depth===0) return {content:src.slice(pos+1,i),end:i+1}; }
+    i++;
+  }
+  return null;
+}
+function _applyFunc2(src, name, fn2, fn1) {
+  let out='', i=0;
+  const kw=name+'(';
+  while (i<src.length) {
+    const idx=src.indexOf(kw,i);
+    if (idx===-1) { out+=src.slice(i); break; }
+    if (idx>0 && /[a-zA-Z]/.test(src[idx-1])) { out+=src[i]; i++; continue; }
+    out+=src.slice(i,idx);
+    const g1=_balancedGroup(src,idx+name.length);
+    if (!g1) { out+=kw; i=idx+kw.length; continue; }
+    if (src[g1.end]==='(' && fn2) {
+      const g2=_balancedGroup(src,g1.end);
+      if (g2) { out+=fn2(g1.content,g2.content); i=g2.end; continue; }
+    }
+    out+=fn1?fn1(g1.content):(kw+g1.content+')');
+    i=g1.end;
+  }
+  return out;
+}
+function _applyFunc1(src,name,fn) { return _applyFunc2(src,name,null,fn); }
+function _applyFrac(src) {
+  let out='', i=0;
+  while (i<src.length) {
+    if (src[i]==='(') {
+      const g1=_balancedGroup(src,i);
+      if (g1 && src[g1.end]==='/' && src[g1.end+1]==='(') {
+        const g2=_balancedGroup(src,g1.end+1);
+        if (g2) { out+=`\\frac{${g1.content}}{${g2.content}}`; i=g2.end; continue; }
+      }
+      out+=src[i]; i++;
+    } else { out+=src[i]; i++; }
+  }
+  return out;
+}
+function _applySymbols(src) {
+  for (const [k,v] of Object.entries(MATH_SYMBOLS)) {
+    const esc=k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    const re=/[a-zA-Z]/.test(k[0])
+      ? new RegExp(`(^|[^\\\\])\\b${esc}\\b`,'g')
+      : new RegExp(esc,'g');
+    try {
+      src=src.replace(re, (match, before) => /[a-zA-Z]/.test(k[0]) ? (before||'') + v : v);
+    } catch(e) {}
+  }
+  return src;
+}
+function _bracesFromParens(src, trigger) {
+  let out = '', i = 0;
+  while (i < src.length) {
+    if (src[i] === trigger && src[i + 1] === '(') {
+      let depth = 1, j = i + 2;
+      while (j < src.length && depth > 0) {
+        if (src[j] === '(') depth++;
+        else if (src[j] === ')') depth--;
+        if (depth === 0) break;
+        j++;
+      }
+      if (depth === 0) {
+        out += trigger + '{' + src.substring(i + 2, j) + '}';
+        i = j + 1;
+        continue;
+      }
+    }
+    out += src[i];
+    i++;
+  }
+  return out;
+}
+function _formatChem(formula) {
+  let charge = '';
+  let m = formula.match(/^(.*?)\^([+\-\d]+)$/);
+  if (m) { formula = m[1]; charge  = `^{${m[2]}}`; }
+  else if (m = formula.match(/^(.*[A-Za-z])([+\-])$/)) { formula = m[1]; charge = `^{${m[2]}}`; }
+  else if (m = formula.match(/^(.*[A-Za-z])(\d+)([+\-])$/)) {
+    const base = m[1];
+    const elements = base.match(/[A-Z][a-z]*/g) || [];
+    if (elements.length === 1) { formula = base; charge = `^{${m[2]}${m[3]}}`; }
+    else { formula = base + m[2]; charge = `^{${m[3]}}`; }
+  }
+  formula = formula.replace(/([A-Za-z\)])(\d+)/g, '$1_{$2}');
+  return formula + charge;
+}
+function compileMath(src) {
+  src = _bracesFromParens(src, '^');
+  src = _bracesFromParens(src, '_');
+  let prev, safety=0;
+  do {
+    prev=src;
+    src=_applyFunc1(src,'vec',x=>`\\vec{${x}}`);
+    src=_applyFunc1(src,'hat',x=>`\\hat{${x}}`);
+    src=_applyFunc1(src,'bar',x=>`\\bar{${x}}`);
+    src=_applyFunc1(src,'tilde',x=>`\\tilde{${x}}`);
+    src=_applyFunc1(src,'over',x=>`\\overline{${x}}`);
+    src=_applyFunc1(src,'under',x=>`\\underline{${x}}`);
+    src=_applyFunc2(src,'sqrt',(n,x)=>`\\sqrt[${n}]{${x}}`,x=>`\\sqrt{${x}}`);
+    src=_applyFunc1(src,'abs',x=>`\\left|${x}\\right|`);
+    src=_applyFunc1(src,'norm',x=>`\\left\\|${x}\\right\\|`);
+    src=_applyFunc1(src,'floor',x=>`\\lfloor ${x} \\rfloor`);
+    src=_applyFunc1(src,'ceil',x=>`\\lceil ${x} \\rceil`);
+    src=_applyFunc1(src,'text',x=>`\\text{${x}}`);
+    src=_applyFunc1(src,'chem',x=>_formatChem(x));
+    src=_applyFunc2(src,'binom',(n,k)=>`\\binom{${n}}{${k}}`);
+    src=_applyFunc2(src,'obrace',(x,l)=>`\\overbrace{${x}}^{\\text{${l}}}`);
+    src=_applyFunc2(src,'ubrace',(x,l)=>`\\underbrace{${x}}_{\\text{${l}}}`);
+  } while (src!==prev && ++safety<8);
+  src=_applyFrac(src);
+  src=_applyFunc2(src,'sum',(s,u)=>`\\sum_{${_arg(s)}}^{${_arg(u)}}`,s=>`\\sum_{${_arg(s)}}`);
+  src=_applyFunc2(src,'int',(a,b)=>`\\int_{${_arg(a)}}^{${_arg(b)}}`,s=>`\\int_{${_arg(s)}}`);
+  src=_applyFunc2(src,'prod',(a,b)=>`\\prod_{${_arg(a)}}^{${_arg(b)}}`,s=>`\\prod_{${_arg(s)}}`);
+  src=_applyFunc1(src,'lim',s=>`\\lim_{${_arg(s)}}`);
+  src=src.replace(/\bsum\b(?!_)/g,'\\sum').replace(/\bint\b(?!_)/g,'\\int')
+         .replace(/\blim\b(?!_)/g,'\\lim').replace(/\bprod\b(?!_)/g,'\\prod');
+  src=src.replace(/\bmat\((\d+)x(\d+)\)\[([^\]]*)\]/g,(_,r,c,vals)=>_buildMatrixFilled(+r,+c,vals));
+  src=src.replace(/\bmat\((\d+)x(\d+)\)/g,(_,r,c)=>_buildMatrix(+r,+c));
+  src=src.replace(/(^|[^{])\bcases\b/g,(m,pre)=> pre + `\\begin{cases} f_1 & \\text{if } c_1 \\\\ f_2 & \\text{if } c_2 \\end{cases}`);
+  src=_applySymbols(src);
+  return src;
+}
+function renderMath(tex, display) {
+  try {
+    return katex.renderToString(tex, {
+      displayMode: display, throwOnError: false,
+      output: 'htmlAndMathml', strict: 'ignore'
+    });
+  } catch(e) {
+    return `<span style="color:var(--coral);font-size:11px">[math: ${e.message}]</span>`;
+  }
+}
+
+// Simple :::box parser matching the app
+const BOX_TYPES = {
+  'definition': { cls: 'note-def',  label: 'Definition' },
+  'theorem':    { cls: 'note-thm',  label: 'Theorem' },
+  'example':    { cls: 'note-ex',   label: 'Example' },
+  'proof':      { cls: 'note-tip',  label: 'Proof' },
+  'note':       { cls: 'note-tip',  label: 'Note' },
+  'warning':    { cls: 'note-warn', label: 'Warning' },
+};
+
+function parseBoxes(md) {
+  const lines = md.split('\n');
+  const out = [];
+  const boxes = [];
+  let i = 0;
+  while (i < lines.length) {
+    const m = lines[i].match(/^:::(\w+)\s*$/);
+    if (m && BOX_TYPES[m[1]]) {
+      const type = m[1];
+      const body = [];
+      i++;
+      while (i < lines.length && lines[i].trim() !== ':::') {
+        body.push(lines[i]); i++;
+      }
+      i++;
+      const token = `HTMLBLOCK_${boxes.length}_END`;
+      boxes.push({ token, body: body.join('\n'), bt: BOX_TYPES[type] });
+      out.push('\n' + token + '\n');
+      continue;
+    }
+    out.push(lines[i]); i++;
+  }
+  return { text: out.join('\n'), boxes };
+}
+
+function renderExample(md) {
+  // Step 1: extract math blocks BEFORE marked mangles backslashes
+  const pendingMath = [];
+  md = md.replace(/\$\$\(([\s\S]*?)\)\$\$/g, (_, inner) => {
+    const idx = pendingMath.length;
+    pendingMath.push({ tex: inner, display: true });
+    return `MATHBLOCK_${idx}_END`;
+  });
+  md = md.replace(/\$\(([\s\S]*?)\)\$/g, (_, inner) => {
+    const idx = pendingMath.length;
+    pendingMath.push({ tex: inner, display: false });
+    return `MATHBLOCK_${idx}_END`;
+  });
+
+  // Step 2: parse boxes (also raw markdown)
+  const { text, boxes } = parseBoxes(md);
+  let html = marked.parse(text);
+
+  // Step 3: inject math back after marked is done
+  html = html.replace(/MATHBLOCK_(\d+)_END/g, (_, idx) => {
+    const item = pendingMath[parseInt(idx)];
+    if (!item) return '';
+    return renderMath(compileMath(item.tex), item.display);
+  });
+
+  // Step 4: inject boxes — their body needs the same math-safe treatment
+  for (const box of boxes) {
+    const bodyMath = [];
+    let body = box.body.replace(/\$\$\(([\s\S]*?)\)\$\$/g, (_, inner) => {
+      const idx = bodyMath.length;
+      bodyMath.push({ tex: inner, display: true });
+      return `BOXMATH_${idx}_END`;
+    });
+    body = body.replace(/\$\(([\s\S]*?)\)\$/g, (_, inner) => {
+      const idx = bodyMath.length;
+      bodyMath.push({ tex: inner, display: false });
+      return `BOXMATH_${idx}_END`;
+    });
+    let inner = marked.parse(body);
+    inner = inner.replace(/BOXMATH_(\d+)_END/g, (_, idx) => {
+      const item = bodyMath[parseInt(idx)];
+      return item ? renderMath(compileMath(item.tex), item.display) : '';
+    });
+    const rendered = `<div class="note-box ${box.bt.cls}"><div class="box-label">${box.bt.label}</div>${inner}</div>`;
+    html = html.replace(new RegExp(`<p>\\s*${box.token}\\s*</p>`, 'g'), rendered);
+    html = html.replace(new RegExp(box.token, 'g'), rendered);
+  }
+  return html;
+}
+
+// Build all "Try it live" blocks after page load
+function initTryItBlocks() {
+  document.querySelectorAll('.tryit[data-example]').forEach((wrap, idx) => {
+    const example = wrap.dataset.example;
+    wrap.innerHTML = `
+      <div class="tryit-header">
+        <span class="tryit-label">Try it live · edit the left pane</span>
+        <button class="tryit-btn" data-reset>Reset</button>
+      </div>
+      <div class="tryit-body">
+        <textarea class="tryit-input" spellcheck="false"></textarea>
+        <div class="tryit-output"></div>
+      </div>
+    `;
+    const input = wrap.querySelector('.tryit-input');
+    const output = wrap.querySelector('.tryit-output');
+    const resetBtn = wrap.querySelector('[data-reset]');
+
+    // Auto-resize textarea
+    function resize() {
+      input.style.height = 'auto';
+      input.style.height = Math.max(input.scrollHeight, 100) + 'px';
+    }
+
+    function update() {
+      try {
+        output.innerHTML = renderExample(input.value);
+      } catch(e) {
+        output.innerHTML = `<div style="color:var(--coral)">Error: ${e.message}</div>`;
+      }
+    }
+
+    input.value = example;
+    resize();
+    update();
+
+    input.addEventListener('input', () => { resize(); update(); });
+    resetBtn.addEventListener('click', () => {
+      input.value = example;
+      resize();
+      update();
+      input.focus();
+    });
+  });
+}
+
+// Highlight nav on scroll
+function initNavHighlight() {
+  const sections = document.querySelectorAll('h1[id], h2[id]');
+  const navItems = document.querySelectorAll('.nav-item[href^="#"]');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        navItems.forEach(item => {
+          item.classList.toggle('active', item.getAttribute('href') === '#' + id);
+        });
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(sec => observer.observe(sec));
+}
+
+// Wait for libraries to load
+function waitFor(check, cb) {
+  if (check()) cb();
+  else setTimeout(() => waitFor(check, cb), 50);
+}
+
+waitFor(() => window.katex && window.marked, () => {
+  marked.setOptions({ breaks: false, gfm: true });
+  initTryItBlocks();
+  initNavHighlight();
+});
+</script>
+</body>
+</html>
