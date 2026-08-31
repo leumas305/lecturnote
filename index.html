@@ -454,6 +454,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14
 #settings-close:hover{color:var(--coral)}
 #settings-body{flex:1;overflow-y:auto;padding:20px}
 .settings-section-title{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:12px}
+.topbar-picker-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border2);border-radius:4px;background:var(--surface2);cursor:pointer;font-family:var(--serif);font-size:12px;color:var(--text2);user-select:none;transition:background 0.1s,border-color 0.1s}
+.topbar-picker-item:hover{border-color:var(--accent);color:var(--text)}
+.topbar-picker-item.on{background:rgba(124,106,247,0.1);border-color:var(--accent);color:var(--accent2)}
 .shortcut-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)}
 .shortcut-row:last-child{border-bottom:none}
 .shortcut-label{font-size:12px;color:var(--text2)}
@@ -592,10 +595,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14
         <option value="off" selected>Off</option>
       </select>
     </div>
-    <button class="tbar-btn" onclick="openJump()" title="Ctrl+G"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>jump <span class="kb-pill">C-G</span></button>
-    <button class="tbar-btn" onclick="insertTimestamp()" title="Ctrl+Alt+Space"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>stamp <span class="kb-pill">C-A-Sp</span></button>
-    <button class="tbar-btn" onclick="openAnchorPicker()" title="Ctrl+Alt+K"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>anchor <span class="kb-pill">C-A-K</span></button>
-    <button class="tbar-btn" onclick="toggleScratchpad()" title="Ctrl+Alt+Z"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>scratch <span class="kb-pill">C-A-Z</span></button>
+    <button class="tbar-btn" data-tbid="jump" onclick="openJump()" title="Ctrl+G"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>jump <span class="kb-pill">C-G</span></button>
+    <button class="tbar-btn" data-tbid="stamp" onclick="insertTimestamp()" title="Ctrl+Alt+Space"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>stamp <span class="kb-pill">C-A-Sp</span></button>
+    <button class="tbar-btn" data-tbid="anchor" onclick="openAnchorPicker()" title="Ctrl+Alt+K"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>anchor <span class="kb-pill">C-A-K</span></button>
+    <button class="tbar-btn" data-tbid="scratch" onclick="toggleScratchpad()" title="Ctrl+Alt+Z"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>scratch <span class="kb-pill">C-A-Z</span></button>
+    <button class="tbar-btn" data-tbid="table" onclick="openTable()" title="Ctrl+Alt+Y" style="display:none"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>table <span class="kb-pill">C-A-Y</span></button>
+    <button class="tbar-btn" data-tbid="code" onclick="openCodePicker && openCodePicker()" title="Ctrl+Alt+J" style="display:none"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>code <span class="kb-pill">C-A-J</span></button>
+    <button class="tbar-btn" data-tbid="box" onclick="openBox()" title="Ctrl+Alt+B" style="display:none"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>box <span class="kb-pill">C-A-B</span></button>
+    <button class="tbar-btn" data-tbid="newnote" onclick="newNote()" title="Ctrl+Alt+M" style="display:none"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>new <span class="kb-pill">C-A-M</span></button>
     <button class="tbar-btn" onclick="openSettings()" title="Ctrl+, — shortcuts settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>shortcuts <span class="kb-pill">Ctrl+,</span></button>
     <button class="tbar-btn" id="sync-btn" onclick="toggleScrollSync()" title="Toggle scroll sync">
       <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
@@ -664,6 +671,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Search overlay -->
+    <div id="search-overlay" class="hidden" style="position:fixed;top:44px;right:16px;z-index:9999;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:8px 10px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,0.5);min-width:340px">
+      <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--text3);fill:none;stroke-width:2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" id="search-input" placeholder="Find in note…" spellcheck="false" style="flex:1;background:transparent;border:none;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;padding:2px 0">
+      <span id="search-count" style="font-family:var(--mono);font-size:10px;color:var(--text3);white-space:nowrap;min-width:40px;text-align:right">0/0</span>
+      <button class="tbar-btn" id="search-prev" onclick="searchStep(-1)" title="Previous (Shift+Enter)" style="padding:3px 6px"><svg viewBox="0 0 24 24" style="width:12px;height:12px"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <button class="tbar-btn" id="search-next" onclick="searchStep(1)" title="Next (Enter)" style="padding:3px 6px"><svg viewBox="0 0 24 24" style="width:12px;height:12px"><polyline points="9 18 15 12 9 6"/></svg></button>
+      <button class="tbar-btn" onclick="closeSearch()" title="Close (Esc)" style="padding:3px 6px">×</button>
     </div>
 
     <!-- Box modal -->
@@ -757,6 +774,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14
       <button id="settings-close" onclick="closeSettings()">×</button>
     </div>
     <div id="settings-body">
+      <div class="settings-section-title">Top bar shortcuts — pick up to 6</div>
+      <div id="topbar-picker" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px"></div>
       <div class="settings-section-title">Ctrl + Alt + key — click a binding to remap</div>
       <div id="shortcut-list"></div>
     </div>
@@ -1040,6 +1059,7 @@ function saveCurrentNote() {
   notes[activeId].name = noteName.value;
   notes[activeId].updated = Date.now();
   notes[activeId].tags = extractTags(editor.value);
+  pruneUnusedImages();
   saveNotes();
 }
 function deleteNote(id) {
@@ -2042,6 +2062,8 @@ function render() {
   // Strip any <p> wrapper marked added around INDEXTOKEN
   html = html.replace(/<p>\s*INDEXTOKEN\s*<\/p>/g, 'INDEXTOKEN');
   html = processIndexToken(html, md); // replace token with actual TOC
+  // Resolve img:N references to actual data URLs from the current note
+  html = resolveImageRefs(html);
   previewInner.innerHTML = html;
   injectHeadingIds();
   const numMap = buildSectionNumbers(md);
@@ -2139,13 +2161,17 @@ function showToast(msg) {
 
 // ── Cursor helpers ─────────────────────────────────────────────────────────
 function insertAtCursor(text, selectFrom, selectTo) {
-  const s=editor.selectionStart, e=editor.selectionEnd;
-  editor.value=editor.value.substring(0,s)+text+editor.value.substring(e);
-  if (selectFrom!==undefined) {
-    editor.selectionStart=s+selectFrom;
-    editor.selectionEnd=s+(selectTo!==undefined?selectTo:selectFrom);
-  } else editor.selectionStart=editor.selectionEnd=s+text.length;
-  editor.focus(); render();
+  const s = editor.selectionStart;
+  // Use execCommand so browser undo (Ctrl+Z) tracks the change.
+  // This replaces the current selection with `text` (if selection is empty
+  // it just inserts at cursor position).
+  document.execCommand('insertText', false, text);
+  if (selectFrom !== undefined) {
+    editor.selectionStart = s + selectFrom;
+    editor.selectionEnd   = s + (selectTo !== undefined ? selectTo : selectFrom);
+  }
+  editor.focus();
+  render();
 }
 function wrapSelection(before, after) {
   const s = editor.selectionStart, e = editor.selectionEnd;
@@ -2463,25 +2489,146 @@ function insertCasesFromEditor() {
 document.getElementById('cases-cancel').addEventListener('click', closeCasesEditor);
 document.getElementById('cases-insert').addEventListener('click', insertCasesFromEditor);
 
+// ── Search (Ctrl+F) ────────────────────────────────────────────────────────
+// Find-in-note overlay. Highlights matches in the editor by scrolling to them
+// and selecting them one at a time. Enter/Shift+Enter to cycle, Esc to close.
+
+let searchMatches = [];   // array of {start, end}
+let searchIndex = -1;
+let searchQuery = '';
+
+function openSearch() {
+  const overlay = document.getElementById('search-overlay');
+  if (!overlay) return;
+  overlay.classList.remove('hidden');
+  const input = document.getElementById('search-input');
+  // If user has text selected, use it as the initial query
+  const sel = editor.value.substring(editor.selectionStart, editor.selectionEnd);
+  if (sel && sel.length < 100 && !sel.includes('\n')) {
+    input.value = sel;
+  }
+  input.focus();
+  input.select();
+  updateSearch();
+}
+
+function closeSearch() {
+  const overlay = document.getElementById('search-overlay');
+  if (!overlay) return;
+  overlay.classList.add('hidden');
+  editor.focus();
+}
+
+function updateSearch() {
+  const input = document.getElementById('search-input');
+  const countEl = document.getElementById('search-count');
+  searchQuery = input.value;
+  searchMatches = [];
+  searchIndex = -1;
+  if (!searchQuery) {
+    countEl.textContent = '0/0';
+    return;
+  }
+  // Case-insensitive substring search over the current editor content
+  const haystack = editor.value.toLowerCase();
+  const needle = searchQuery.toLowerCase();
+  let pos = 0;
+  while ((pos = haystack.indexOf(needle, pos)) !== -1) {
+    searchMatches.push({ start: pos, end: pos + needle.length });
+    pos += needle.length || 1;
+    if (searchMatches.length > 1000) break; // safety cap
+  }
+  if (searchMatches.length === 0) {
+    countEl.textContent = '0/0';
+    return;
+  }
+  // Jump to the first match at or after the current cursor position
+  const cursorPos = editor.selectionStart;
+  let firstIdx = searchMatches.findIndex(m => m.start >= cursorPos);
+  if (firstIdx === -1) firstIdx = 0;
+  searchIndex = firstIdx;
+  gotoSearchMatch();
+}
+
+function searchStep(dir) {
+  if (!searchMatches.length) return;
+  searchIndex = (searchIndex + dir + searchMatches.length) % searchMatches.length;
+  gotoSearchMatch();
+}
+
+function gotoSearchMatch() {
+  const match = searchMatches[searchIndex];
+  if (!match) return;
+  editor.focus();
+  editor.setSelectionRange(match.start, match.end);
+  // Scroll the match into view — approximate line height * line number
+  const lineHeight = parseFloat(getComputedStyle(editor).lineHeight) || 20;
+  const line = editor.value.substring(0, match.start).split('\n').length - 1;
+  editor.scrollTop = Math.max(0, line * lineHeight - editor.clientHeight / 3);
+  document.getElementById('search-count').textContent = `${searchIndex + 1}/${searchMatches.length}`;
+  // Keep the search input focused so typing keeps working
+  setTimeout(() => document.getElementById('search-input').focus(), 0);
+}
+
+// Wire input events
+document.getElementById('search-input').addEventListener('input', updateSearch);
+document.getElementById('search-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    searchStep(e.shiftKey ? -1 : 1);
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    closeSearch();
+  }
+});
+
+// Global Ctrl+F handler — bypasses the shortcut settings system since this
+// is a browser-standard shortcut users expect to always work
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'f') {
+    e.preventDefault();
+    openSearch();
+  }
+}, true);
+
 // ── Box insert ─────────────────────────────────────────────────────────────
 function openBox()  { boxOverlay.classList.remove('hidden'); }
 function closeBox() { boxOverlay.classList.add('hidden'); editor.focus(); }
 function insertBox(type) {
   closeBox();
   const bt=BOX_TYPES[type]; if (!bt) return;
+  // If the user has text selected, wrap it as the box content
+  // instead of erasing it and using a placeholder.
+  const s = editor.selectionStart, e = editor.selectionEnd;
+  const selectedText = editor.value.substring(s, e).trim();
+
   let text, selectFrom, selectTo;
   if (type==='sequence') {
-    text='\n:::sequence\nDNA\nATGCATGCATGC\n:::\n';
-    selectFrom=text.indexOf('ATGCATGCATGC');
-    selectTo=selectFrom+12;
+    if (selectedText) {
+      text = `\n:::sequence\nDNA\n${selectedText}\n:::\n`;
+      const contentStart = text.indexOf(selectedText);
+      selectFrom = contentStart; selectTo = contentStart + selectedText.length;
+    } else {
+      text='\n:::sequence\nDNA\nATGCATGCATGC\n:::\n';
+      selectFrom=text.indexOf('ATGCATGCATGC');
+      selectTo=selectFrom+12;
+    }
   } else if (type==='graph') {
+    // Graph doesn't map cleanly to arbitrary selected text — keep template
     text='\n:::graph LR\na: Node A\nb: Node B\nc: Node C\na -> b\na -> c\nb -> c : relates to\n:::\n';
     selectFrom=text.indexOf('a: Node A');
     selectTo=selectFrom+9;
   } else {
-    const ph='Write here.';
-    text=`\n:::${type}\n**${bt.label}.** ${ph}\n:::\n`;
-    selectFrom=text.indexOf(ph); selectTo=selectFrom+ph.length;
+    if (selectedText) {
+      // Preserve the selected text as the box body — no auto **Label.** prefix
+      text = `\n:::${type}\n${selectedText}\n:::\n`;
+      const contentStart = text.indexOf(selectedText);
+      selectFrom = contentStart; selectTo = contentStart + selectedText.length;
+    } else {
+      const ph='Write here.';
+      text=`\n:::${type}\n**${bt.label}.** ${ph}\n:::\n`;
+      selectFrom=text.indexOf(ph); selectTo=selectFrom+ph.length;
+    }
   }
   insertAtCursor(text, selectFrom, selectTo);
   showToast(bt.label+' inserted');
@@ -2828,6 +2975,35 @@ editor.addEventListener('input', () => {
 });
 
 // ── Image paste ────────────────────────────────────────────────────────────
+
+// Resolve img:N references in rendered HTML to actual data URLs from
+// the current note's image store.  Runs on the final HTML before injection.
+function resolveImageRefs(html) {
+  const note = notes[activeId];
+  if (!note || !note.images) return html;
+  return html.replace(/src="img:(\d+)"/g, (_, id) => {
+    const dataUrl = note.images[id];
+    return dataUrl ? `src="${dataUrl}"` : 'src=""';
+  });
+}
+
+// Prune image references that are no longer used in the note text.
+// Called on save so orphaned images don't bloat storage indefinitely.
+function pruneUnusedImages() {
+  const note = notes[activeId];
+  if (!note || !note.images) return;
+  const md = editor.value;
+  const used = new Set();
+  const re = /!\[[^\]]*\]\(img:(\d+)\)/g;
+  let m;
+  while ((m = re.exec(md)) !== null) used.add(m[1]);
+  for (const id of Object.keys(note.images)) {
+    if (!used.has(id)) delete note.images[id];
+  }
+}
+// Images are stored per-note in notes[activeId].images (keyed by short id).
+// The editor gets a compact reference like ![image1](img:1) instead of a
+// 500-char base64 blob. Rendering resolves img:N back to the data URL.
 editor.addEventListener('paste', e => {
   const items=e.clipboardData?.items;
   if (!items) return;
@@ -2838,8 +3014,16 @@ editor.addEventListener('paste', e => {
       const reader=new FileReader();
       reader.onload=ev=>{
         const dataUrl=ev.target.result;
-        insertAtCursor(`\n![image](${dataUrl})\n`);
-        showToast('Image pasted');
+        const note = notes[activeId];
+        if (!note) return;
+        if (!note.images) note.images = {};
+        // Find next available id
+        const existingIds = Object.keys(note.images).map(k => parseInt(k)).filter(n => !isNaN(n));
+        const nextId = existingIds.length ? Math.max(...existingIds) + 1 : 1;
+        note.images[nextId] = dataUrl;
+        saveNotes();
+        insertAtCursor(`\n![image${nextId}](img:${nextId})\n`);
+        showToast(`Image ${nextId} pasted`);
       };
       reader.readAsDataURL(file);
       return;
@@ -3068,9 +3252,84 @@ const MOD_GROUPS  = [
 let settingsOpen = false;
 let recordingId = null;
 
+// ── Topbar customization ────────────────────────────────────────────────
+// User picks up to 6 buttons to show in the topbar. Others hide.
+// Persisted in localStorage. Sync, shortcuts, PDF, and the dict selector
+// are always visible — the picker only controls the customizable ones.
+const TOPBAR_BUTTONS = {
+  'jump':    { label: 'Jump palette',      hint: 'Ctrl+G' },
+  'stamp':   { label: 'Timestamp',         hint: 'Ctrl+Alt+Space' },
+  'anchor':  { label: 'Anchor picker',     hint: 'Ctrl+Alt+K' },
+  'scratch': { label: 'Scratchpad',        hint: 'Ctrl+Alt+Z' },
+  'table':   { label: 'Table editor',      hint: 'Ctrl+Alt+Y' },
+  'code':    { label: 'Code picker',       hint: 'Ctrl+Alt+J' },
+  'box':     { label: 'Box picker',        hint: 'Ctrl+Alt+B' },
+  'newnote': { label: 'New note',          hint: 'Ctrl+Alt+M' },
+};
+const TOPBAR_DEFAULT = ['jump', 'stamp', 'anchor', 'scratch'];
+const TOPBAR_MAX = 6;
+const TOPBAR_STORAGE_KEY = 'lecturnote_topbar';
+
+function getTopbarSelection() {
+  try {
+    const raw = localStorage.getItem(TOPBAR_STORAGE_KEY);
+    if (!raw) return [...TOPBAR_DEFAULT];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [...TOPBAR_DEFAULT];
+    // Filter out any unknown ids (in case options changed between versions)
+    return parsed.filter(id => TOPBAR_BUTTONS[id]).slice(0, TOPBAR_MAX);
+  } catch(e) {
+    return [...TOPBAR_DEFAULT];
+  }
+}
+
+function applyTopbarSelection() {
+  const selected = new Set(getTopbarSelection());
+  document.querySelectorAll('#topbar-actions [data-tbid]').forEach(btn => {
+    btn.style.display = selected.has(btn.dataset.tbid) ? '' : 'none';
+  });
+}
+
+function renderTopbarPicker() {
+  const container = document.getElementById('topbar-picker');
+  if (!container) return;
+  const selected = new Set(getTopbarSelection());
+  const html = Object.entries(TOPBAR_BUTTONS).map(([id, info]) => {
+    const isOn = selected.has(id);
+    return `<label class="topbar-picker-item ${isOn ? 'on' : ''}" data-tbid="${id}">
+      <input type="checkbox" ${isOn ? 'checked' : ''} data-tbid="${id}" style="margin:0">
+      <span>${info.label}</span>
+      <span style="color:var(--text3);font-family:var(--mono);font-size:10px">${info.hint}</span>
+    </label>`;
+  }).join('');
+  container.innerHTML = html + `<div style="width:100%;font-size:10px;color:var(--text3);margin-top:4px">${selected.size}/${TOPBAR_MAX} selected — extras beyond ${TOPBAR_MAX} will be ignored</div>`;
+
+  container.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const current = getTopbarSelection();
+      const id = cb.dataset.tbid;
+      if (cb.checked) {
+        if (current.length >= TOPBAR_MAX) {
+          cb.checked = false;
+          showToast(`Max ${TOPBAR_MAX} — deselect one first`);
+          return;
+        }
+        current.push(id);
+      } else {
+        const i = current.indexOf(id);
+        if (i !== -1) current.splice(i, 1);
+      }
+      localStorage.setItem(TOPBAR_STORAGE_KEY, JSON.stringify(current));
+      applyTopbarSelection();
+      renderTopbarPicker();
+    });
+  });
+}
+
 function openSettings() {
   settingsOpen = true;
   document.getElementById('settings-overlay').classList.remove('hidden');
+  renderTopbarPicker();
   renderShortcutList();
 }
 function closeSettings() {
@@ -3416,6 +3675,8 @@ def needleman_wunsch(seq1, seq2, match=1, mismatch=-1, gap=-2):
 // ── Boot ───────────────────────────────────────────────────────────────────
 loadNotes();
 editor.focus();
+// Apply user's topbar selection (or defaults on first run)
+applyTopbarSelection();
 // Initialise sync button state
 document.getElementById('sync-btn').style.color = 'var(--green)';
 document.getElementById('sync-btn').style.borderColor = 'var(--green)';
