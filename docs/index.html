@@ -991,31 +991,31 @@ function parseBoxes(md) {
 }
 
 function renderExample(md) {
-  // Step 1: extract math blocks BEFORE marked mangles backslashes
+  // Step 1: parse boxes FIRST (so their bodies keep raw $(...)$ syntax)
+  const { text, boxes } = parseBoxes(md);
+
+  // Step 2: extract math from the outer text (after box removal)
   const pendingMath = [];
-  md = md.replace(/\$\$\(([\s\S]*?)\)\$\$/g, (_, inner) => {
+  let outerText = text.replace(/\$\$\(([\s\S]*?)\)\$\$/g, (_, inner) => {
     const idx = pendingMath.length;
     pendingMath.push({ tex: inner, display: true });
     return `MATHBLOCK_${idx}_END`;
   });
-  md = md.replace(/\$\(([\s\S]*?)\)\$/g, (_, inner) => {
+  outerText = outerText.replace(/\$\(([\s\S]*?)\)\$/g, (_, inner) => {
     const idx = pendingMath.length;
     pendingMath.push({ tex: inner, display: false });
     return `MATHBLOCK_${idx}_END`;
   });
 
-  // Step 2: parse boxes (also raw markdown)
-  const { text, boxes } = parseBoxes(md);
-  let html = marked.parse(text);
-
-  // Step 3: inject math back after marked is done
+  // Step 3: markdown parse the outer text and inject math back
+  let html = marked.parse(outerText);
   html = html.replace(/MATHBLOCK_(\d+)_END/g, (_, idx) => {
     const item = pendingMath[parseInt(idx)];
     if (!item) return '';
     return renderMath(compileMath(item.tex), item.display);
   });
 
-  // Step 4: inject boxes — their body needs the same math-safe treatment
+  // Step 4: process each box body independently with the same math-safe pipeline
   for (const box of boxes) {
     const bodyMath = [];
     let body = box.body.replace(/\$\$\(([\s\S]*?)\)\$\$/g, (_, inner) => {

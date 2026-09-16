@@ -45,6 +45,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14
 #new-note-btn{background:none;border:1px solid var(--border2);border-radius:4px;color:var(--accent2);font-size:16px;line-height:1;cursor:pointer;padding:0 5px 1px}
 #new-note-btn:hover{background:var(--surface2)}
 #sidebar-tags{padding:6px 10px;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:4px;min-height:30px}
+#sidebar-folders{padding:6px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;font-size:11px}
+#folder-select{flex:1;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;padding:4px 6px;border-radius:3px;outline:none;cursor:pointer}
+#folder-select:focus{border-color:var(--accent)}
+.folder-btn{background:transparent;border:1px solid var(--border2);color:var(--text3);width:22px;height:22px;border-radius:3px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
+.folder-btn:hover{color:var(--accent2);border-color:var(--accent)}
+.note-item{position:relative}
+.note-item-folder-chip{display:inline-block;font-family:var(--mono);font-size:9px;color:var(--text3);background:var(--surface3);padding:1px 5px;border-radius:2px;margin-right:4px;letter-spacing:0.3px}
 .tag-filter-chip{font-size:10px;padding:2px 7px;border-radius:10px;border:1px solid var(--border2);color:var(--text3);cursor:pointer;background:var(--surface2)}
 .tag-filter-chip:hover,.tag-filter-chip.active{border-color:var(--accent);color:var(--accent2);background:rgba(124,106,247,0.1)}
 #notes-list{flex:1;overflow-y:auto;padding:6px 0}
@@ -64,7 +71,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14
 #editor-pane{flex:1;display:flex;flex-direction:column;border-right:1px solid var(--border);position:relative;min-width:0}
 #editor-header{padding:5px 14px;border-bottom:1px solid var(--border);font-size:10px;color:var(--text3);display:flex;align-items:center;gap:8px;background:var(--surface);flex-shrink:0}
 .dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block}
-#editor{flex:1;background:transparent;border:none;outline:none;resize:none;color:var(--text);font-family:var(--mono);font-size:13.5px;line-height:1.85;padding:20px 24px;caret-color:var(--accent2);width:100%;transition:background 0.45s ease;tab-size:2}
+#editor{flex:1;background:transparent;border:none;outline:none;resize:none;color:var(--text);font-family:var(--mono);font-size:13.5px;line-height:1.85;padding:20px 24px;caret-color:var(--accent2);width:100%;transition:background 0.45s ease;tab-size:2;position:relative;z-index:2}
+#search-highlight-layer{color:transparent}
+#search-highlight-layer mark.search-hit{background:rgba(245,184,66,0.35);color:transparent;border-radius:2px;padding:0}
+#search-highlight-layer mark.search-current{background:rgba(245,184,66,0.75);outline:1px solid var(--amber);color:transparent}
 #editor::selection{background:rgba(124,106,247,0.25)}
 #editor.flash-green{background:rgba(78,202,139,0.07)}
 #editor.flash-purple{background:rgba(124,106,247,0.08)}
@@ -613,7 +623,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14
 </div>
 
 <div id="sidebar">
-  <div id="sidebar-header">notes<button id="new-note-btn" onclick="newNote()" title="New note">+</button></div>
+  <div id="sidebar-header">
+    notes
+    <div style="display:flex;gap:4px;align-items:center">
+      <button id="vault-open-btn" onclick="openVault()" title="Open folder from disk" style="background:transparent;border:1px solid var(--border2);color:var(--text3);width:22px;height:22px;border-radius:3px;cursor:pointer;font-size:11px;padding:0;line-height:1">📁</button>
+      <button id="new-note-btn" onclick="newNote()" title="New note">+</button>
+    </div>
+  </div>
+  <div id="sidebar-folders"></div>
   <div id="sidebar-tags"></div>
   <div id="notes-list"></div>
 </div>
@@ -674,7 +691,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14
     </div>
 
     <!-- Search overlay -->
-    <div id="search-overlay" class="hidden" style="position:fixed;top:44px;right:16px;z-index:9999;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:8px 10px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,0.5);min-width:340px">
+    <div id="search-overlay" style="position:fixed;top:44px;right:16px;z-index:9999;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:8px 10px;display:none;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,0.5);min-width:340px">
       <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--text3);fill:none;stroke-width:2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
       <input type="text" id="search-input" placeholder="Find in note…" spellcheck="false" style="flex:1;background:transparent;border:none;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;padding:2px 0">
       <span id="search-count" style="font-family:var(--mono);font-size:10px;color:var(--text3);white-space:nowrap;min-width:40px;text-align:right">0/0</span>
@@ -1029,10 +1046,14 @@ function loadNotes() {
 }
 function newNote(silent) {
   const id = 'note_' + Date.now();
-  notes[id] = { name:'Untitled note', content: DEFAULT_CONTENT, updated: Date.now(), tags:[] };
+  const note = { name:'Untitled note', content: DEFAULT_CONTENT, updated: Date.now(), tags:[] };
+  // If a real folder is active (not "all" or "no folder"), place the new note there
+  if (activeFolder && activeFolder !== '__all__' && activeFolder !== '__none__') {
+    note.folder = activeFolder;
+  }
+  notes[id] = note;
   activeId = id;
   saveNotes();
-  // Set editor value explicitly before render so preview updates immediately
   editor.value = DEFAULT_CONTENT;
   noteName.value = 'Untitled note';
   render();
@@ -1097,7 +1118,554 @@ function extractTags(content) {
   const matches = tagLine.match(/#([a-zA-Z][a-zA-Z0-9_-]*)/g) || [];
   return [...new Set(matches.map(t => t.slice(1)))];
 }
+// ── Vault (folder) mode ─────────────────────────────────────────────────
+// When a folder is open, notes read/write to disk as .md files instead
+// of localStorage. The library (localStorage) stays intact and can be
+// returned to by closing the folder.
+let vaultMode        = false;
+let vaultRoot        = null;      // absolute path shown to user only
+let vaultCurrentFile = null;      // relative path of open note, or null
+let vaultTree        = [];        // cached flat listing of the tree
+let vaultExpanded    = new Set(); // relative paths of expanded folders
+const VAULT_LAST_KEY = 'lecturnote_last_vault';
+const VAULT_EXPANDED_KEY = 'lecturnote_vault_expanded';
+
+async function openVault(folderPath) {
+  if (!window.vault) { showToast('Vault mode needs the desktop app'); return; }
+  try {
+    if (!folderPath) folderPath = await window.vault.pickFolder();
+    if (!folderPath) return;
+    await window.vault.open(folderPath);
+    vaultMode = true;
+    vaultRoot = folderPath;
+    localStorage.setItem(VAULT_LAST_KEY, folderPath);
+    try {
+      vaultExpanded = new Set(JSON.parse(localStorage.getItem(VAULT_EXPANDED_KEY) || '[]'));
+    } catch(e) { vaultExpanded = new Set(); }
+    vaultCurrentFile = null;
+    await refreshVaultTree();
+    // Try to open the first file, or leave editor empty if the vault is empty
+    const firstFile = vaultTree.find(e => !e.isDir);
+    if (firstFile) {
+      await openVaultNote(firstFile.path);
+    } else {
+      editor.value = '';
+      noteName.value = '';
+      render();
+    }
+    renderVaultSidebar();
+    updateVaultUIState();
+    showToast(`Opened ${folderPath}`);
+  } catch(e) {
+    console.error(e);
+    showToast('Failed to open folder: ' + e.message);
+  }
+}
+
+async function closeVault() {
+  if (!vaultMode) return;
+  await saveCurrentVaultNote(); // flush pending edits
+  try { await window.vault.close(); } catch(e) {}
+  vaultMode = false;
+  vaultRoot = null;
+  vaultCurrentFile = null;
+  vaultTree = [];
+  localStorage.removeItem(VAULT_LAST_KEY);
+  // Restore library view
+  loadActiveNote();
+  renderNotesList();
+  updateVaultUIState();
+  showToast('Closed folder — back to library');
+}
+
+// Walk the vault, respecting expanded folders. Produces a flat list of
+// entries with `depth` for indentation and `parent` for path context.
+async function refreshVaultTree() {
+  vaultTree = [];
+  await walkVault('', 0);
+}
+async function walkVault(dir, depth) {
+  let entries;
+  try { entries = await window.vault.list(dir); }
+  catch(e) { console.error('list failed:', e); return; }
+  for (const ent of entries) {
+    vaultTree.push({ ...ent, depth });
+    if (ent.isDir && vaultExpanded.has(ent.path)) {
+      await walkVault(ent.path, depth + 1);
+    }
+  }
+}
+
+// Open a note from disk, saving the currently-open one first
+async function openVaultNote(relPath) {
+  await saveCurrentVaultNote();
+  try {
+    const content = await window.vault.read(relPath);
+    vaultCurrentFile = relPath;
+    editor.value = content;
+    // Note name = filename without .md
+    const base = relPath.split('/').pop();
+    noteName.value = base.replace(/\.md$/i, '');
+    render();
+    renderVaultSidebar();
+    editor.focus();
+  } catch(e) {
+    console.error(e);
+    showToast('Failed to open: ' + e.message);
+  }
+}
+
+// Save the currently-open vault note (if any) back to disk
+async function saveCurrentVaultNote() {
+  if (!vaultMode || !vaultCurrentFile) return;
+  try {
+    await window.vault.write(vaultCurrentFile, editor.value);
+  } catch(e) {
+    console.error('save failed:', e);
+    showToast('Save failed: ' + e.message);
+  }
+}
+
+// Create a new note in the current directory context (root, or the folder
+// that contains the currently-open file). Prompts for a name.
+async function newVaultNote() {
+  const name = prompt('New note name:');
+  if (!name) return;
+  const cleanName = name.replace(/[\\/:*?"<>|]/g, '').trim();
+  if (!cleanName) { showToast('Invalid name'); return; }
+  // Place in the same directory as the currently open file, else root
+  const parentDir = vaultCurrentFile ? vaultCurrentFile.split('/').slice(0, -1).join('/') : '';
+  const filename = cleanName.endsWith('.md') ? cleanName : cleanName + '.md';
+  const relPath = parentDir ? `${parentDir}/${filename}` : filename;
+  // Refuse to overwrite
+  if (await window.vault.exists(relPath)) { showToast('A note by that name exists'); return; }
+  try {
+    await window.vault.write(relPath, `# ${cleanName.replace(/\.md$/i,'')}\n\n`);
+    await refreshVaultTree();
+    await openVaultNote(relPath);
+    // Focus title input like the library flow does
+    noteName.focus(); noteName.select();
+  } catch(e) {
+    showToast('Failed to create note: ' + e.message);
+  }
+}
+
+async function newVaultFolder() {
+  const name = prompt('New folder name:');
+  if (!name) return;
+  const cleanName = name.replace(/[\\/:*?"<>|]/g, '').trim();
+  if (!cleanName) { showToast('Invalid name'); return; }
+  // Create at root by default; nested creation via right-click on a folder (future)
+  try {
+    await window.vault.mkdir(cleanName);
+    await refreshVaultTree();
+    vaultExpanded.add(cleanName);
+    saveVaultExpanded();
+    renderVaultSidebar();
+    showToast(`Folder "${cleanName}" created`);
+  } catch(e) {
+    showToast('Failed to create folder: ' + e.message);
+  }
+}
+
+async function deleteVaultEntry(relPath, isDir) {
+  const name = relPath.split('/').pop();
+  const label = isDir ? `folder "${name}" and everything in it` : `"${name}"`;
+  if (!confirm(`Move ${label} to trash?`)) return;
+  try {
+    await window.vault.delete(relPath);
+    // If we deleted the open file, clear the editor
+    if (vaultCurrentFile === relPath || (isDir && vaultCurrentFile && vaultCurrentFile.startsWith(relPath + '/'))) {
+      vaultCurrentFile = null;
+      editor.value = '';
+      noteName.value = '';
+      render();
+    }
+    await refreshVaultTree();
+    renderVaultSidebar();
+    showToast('Moved to trash');
+  } catch(e) {
+    showToast('Delete failed: ' + e.message);
+  }
+}
+
+async function renameVaultEntry(relPath, isDir) {
+  const oldName = relPath.split('/').pop();
+  const displayName = isDir ? oldName : oldName.replace(/\.md$/i, '');
+  const newDisplayName = prompt(`Rename ${isDir ? 'folder' : 'note'}:`, displayName);
+  if (!newDisplayName || newDisplayName === displayName) return;
+  const cleanName = newDisplayName.replace(/[\\/:*?"<>|]/g, '').trim();
+  if (!cleanName) { showToast('Invalid name'); return; }
+  const newFilename = isDir ? cleanName : (cleanName.endsWith('.md') ? cleanName : cleanName + '.md');
+  const parentDir = relPath.split('/').slice(0, -1).join('/');
+  const newRelPath = parentDir ? `${parentDir}/${newFilename}` : newFilename;
+  if (await window.vault.exists(newRelPath)) { showToast('Name already taken'); return; }
+  try {
+    // If renaming the currently-open file, save first
+    if (vaultCurrentFile === relPath) await saveCurrentVaultNote();
+    await window.vault.rename(relPath, newRelPath);
+    if (vaultCurrentFile === relPath) {
+      vaultCurrentFile = newRelPath;
+      noteName.value = cleanName.replace(/\.md$/i, '');
+    }
+    await refreshVaultTree();
+    renderVaultSidebar();
+  } catch(e) {
+    showToast('Rename failed: ' + e.message);
+  }
+}
+
+function saveVaultExpanded() {
+  try { localStorage.setItem(VAULT_EXPANDED_KEY, JSON.stringify([...vaultExpanded])); }
+  catch(e) {}
+}
+
+function renderVaultSidebar() {
+  const container = document.getElementById('notes-list');
+  if (!container) return;
+  // Header row with vault path + actions
+  const header = document.getElementById('sidebar-folders');
+  if (header) {
+    const pathParts = (vaultRoot || '').split(/[\/\\]/).filter(Boolean);
+    const rootName = pathParts.slice(-2).join('/') || vaultRoot || '';
+    header.innerHTML = `
+      <div style="flex:1;font-family:var(--mono);font-size:10px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(vaultRoot || '')}">📁 ${escHtml(rootName)}</div>
+      <button class="folder-btn" onclick="newVaultFolder()" title="New folder">+📁</button>
+      <button class="folder-btn" onclick="closeVault()" title="Close folder (back to library)">×</button>
+    `;
+  }
+  // Hide tag filter row in vault mode (tags-in-file feature could be added later)
+  const tagsEl = document.getElementById('sidebar-tags');
+  if (tagsEl) tagsEl.style.display = 'none';
+
+  // Render the tree
+  container.innerHTML = vaultTree.map(entry => {
+    const indent = entry.depth * 12;
+    const isActive = (!entry.isDir && entry.path === vaultCurrentFile);
+    const chevron = entry.isDir
+      ? (vaultExpanded.has(entry.path) ? '▾' : '▸')
+      : '';
+    const icon = entry.isDir ? '📁' : '📝';
+    const name = entry.isDir ? entry.name : entry.name.replace(/\.md$/i, '');
+    return `<div class="note-item ${isActive ? 'active' : ''}" data-path="${escHtml(entry.path)}" data-isdir="${entry.isDir}" style="padding-left:${8 + indent}px">
+      <span style="width:12px;color:var(--text3);font-size:9px">${chevron}</span>
+      <span class="note-item-name">${icon} ${escHtml(name)}</span>
+    </div>`;
+  }).join('');
+
+  container.querySelectorAll('.note-item').forEach(el => {
+    el.addEventListener('click', async () => {
+      const relPath = el.dataset.path;
+      const isDir = el.dataset.isdir === 'true';
+      if (isDir) {
+        if (vaultExpanded.has(relPath)) vaultExpanded.delete(relPath);
+        else vaultExpanded.add(relPath);
+        saveVaultExpanded();
+        await refreshVaultTree();
+        renderVaultSidebar();
+      } else {
+        await openVaultNote(relPath);
+      }
+    });
+    el.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      showVaultContextMenu(el.dataset.path, el.dataset.isdir === 'true', e.clientX, e.clientY);
+    });
+  });
+}
+
+function showVaultContextMenu(relPath, isDir, x, y) {
+  document.querySelectorAll('.note-ctx-menu').forEach(m => m.remove());
+  const menu = document.createElement('div');
+  menu.className = 'note-ctx-menu';
+  menu.style.cssText = `
+    position: fixed; top: ${y}px; left: ${x}px; z-index: 10000;
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 6px; padding: 4px 0; min-width: 160px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    font-family: var(--mono); font-size: 11px;
+  `;
+  menu.innerHTML = `
+    <div class="ctx-item" data-action="rename" style="padding:5px 12px;cursor:pointer;color:var(--text)">Rename…</div>
+    <div class="ctx-item" data-action="delete" style="padding:5px 12px;cursor:pointer;color:var(--coral)">Move to trash…</div>
+  `;
+  document.body.appendChild(menu);
+  menu.querySelectorAll('.ctx-item').forEach(item => {
+    item.addEventListener('mouseenter', () => item.style.background = 'var(--surface2)');
+    item.addEventListener('mouseleave', () => item.style.background = '');
+    item.addEventListener('click', async () => {
+      const action = item.dataset.action;
+      menu.remove();
+      if (action === 'rename') await renameVaultEntry(relPath, isDir);
+      else if (action === 'delete') await deleteVaultEntry(relPath, isDir);
+    });
+  });
+  setTimeout(() => {
+    document.addEventListener('click', function closeMenu() {
+      menu.remove();
+      document.removeEventListener('click', closeMenu);
+    }, { once: true });
+  }, 0);
+}
+
+// UI state: show/hide "Open folder" button, update button labels
+function updateVaultUIState() {
+  const openBtn = document.getElementById('vault-open-btn');
+  const newBtn = document.getElementById('new-note-btn');
+  if (openBtn) openBtn.style.display = vaultMode ? 'none' : '';
+  if (newBtn) {
+    // In vault mode, new-note button triggers file creation instead of library note creation
+    newBtn.onclick = vaultMode ? newVaultNote : (() => newNote());
+    newBtn.title = vaultMode ? 'New note in folder' : 'New note';
+  }
+}
+
+// Auto-save on editor changes (debounced) — only in vault mode.
+// Library mode's save flow is unchanged (per-keystroke via saveCurrentNote).
+let vaultSaveTimer = null;
+function scheduleVaultSave() {
+  if (!vaultMode || !vaultCurrentFile) return;
+  clearTimeout(vaultSaveTimer);
+  vaultSaveTimer = setTimeout(() => saveCurrentVaultNote(), 500);
+}
+
+// Rename the file when the user edits the title input (vault mode)
+async function handleVaultTitleChange() {
+  if (!vaultMode || !vaultCurrentFile) return;
+  const newName = noteName.value.trim();
+  if (!newName) return;
+  const cleanName = newName.replace(/[\\/:*?"<>|]/g, '').trim();
+  const newFilename = cleanName + '.md';
+  const parentDir = vaultCurrentFile.split('/').slice(0, -1).join('/');
+  const newRelPath = parentDir ? `${parentDir}/${newFilename}` : newFilename;
+  if (newRelPath === vaultCurrentFile) return; // unchanged
+  if (await window.vault.exists(newRelPath)) return; // silently ignore collisions here
+  try {
+    await saveCurrentVaultNote();
+    await window.vault.rename(vaultCurrentFile, newRelPath);
+    vaultCurrentFile = newRelPath;
+    await refreshVaultTree();
+    renderVaultSidebar();
+  } catch(e) { console.error('rename on title change failed:', e); }
+}
+
+// Load previously-opened vault on boot (if any)
+async function tryReopenLastVault() {
+  const last = localStorage.getItem(VAULT_LAST_KEY);
+  if (!last || !window.vault) return false;
+  try {
+    await openVault(last);
+    return true;
+  } catch(e) {
+    // Folder was moved/deleted — clean up and go back to library
+    localStorage.removeItem(VAULT_LAST_KEY);
+    return false;
+  }
+}
+
+
+// Notes can be organised into folders (an optional `folder` string on each
+// note). Empty folders persist in localStorage so they don't disappear when
+// the last note is moved out.
+// ── Library folder management (localStorage only) ─────────────────────────
+// Notes can be organised into folders (an optional `folder` string on each
+// note). Empty folders persist in localStorage so they don't disappear when
+// the last note is moved out.  Only active when vaultMode is false.
+const FOLDERS_STORAGE_KEY = 'lecturnote_folders';
+const ACTIVE_FOLDER_KEY   = 'lecturnote_active_folder';
+let activeFolder = localStorage.getItem(ACTIVE_FOLDER_KEY) || '__all__';
+
+function loadFolders() {
+  try {
+    const raw = localStorage.getItem(FOLDERS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch(e) { return []; }
+}
+function saveFolders(list) {
+  localStorage.setItem(FOLDERS_STORAGE_KEY, JSON.stringify(list));
+}
+function getAllFolders() {
+  // Union of user-created folders and folders currently referenced by notes
+  const fromStorage = loadFolders();
+  const fromNotes   = new Set();
+  Object.values(notes).forEach(n => { if (n.folder) fromNotes.add(n.folder); });
+  return [...new Set([...fromStorage, ...fromNotes])].sort();
+}
+function setActiveFolder(folder) {
+  activeFolder = folder;
+  localStorage.setItem(ACTIVE_FOLDER_KEY, folder);
+  renderFoldersUI();
+  renderNotesList();
+}
+function createFolder(name) {
+  name = (name || '').trim();
+  if (!name) return;
+  if (name === '__all__' || name === '__none__') { showToast('Reserved folder name'); return; }
+  const folders = loadFolders();
+  if (!folders.includes(name)) {
+    folders.push(name);
+    saveFolders(folders);
+  }
+  setActiveFolder(name);
+  showToast(`Folder "${name}" created`);
+}
+function deleteFolder(name) {
+  if (!confirm(`Delete folder "${name}"? Notes inside will move to No folder.`)) return;
+  // Move any notes in this folder back to no folder
+  Object.values(notes).forEach(n => {
+    if (n.folder === name) delete n.folder;
+  });
+  saveNotes();
+  saveFolders(loadFolders().filter(f => f !== name));
+  if (activeFolder === name) setActiveFolder('__all__');
+  else { renderFoldersUI(); renderNotesList(); }
+}
+function moveNoteToFolder(noteId, folder) {
+  if (!notes[noteId]) return;
+  if (folder === '__none__' || !folder) delete notes[noteId].folder;
+  else notes[noteId].folder = folder;
+  saveNotes();
+  renderNotesList();
+}
+
+function renderFoldersUI() {
+  const container = document.getElementById('sidebar-folders');
+  if (!container) return;
+  const folders = getAllFolders();
+  const opts = [
+    `<option value="__all__" ${activeFolder==='__all__'?'selected':''}>All notes</option>`,
+    `<option value="__none__" ${activeFolder==='__none__'?'selected':''}>(no folder)</option>`,
+    ...folders.map(f =>
+      `<option value="${escHtml(f)}" ${activeFolder===f?'selected':''}>${escHtml(f)}</option>`
+    ),
+  ];
+  container.innerHTML = `
+    <select id="folder-select" title="Filter notes by folder">${opts.join('')}</select>
+    <button class="folder-btn" onclick="promptNewFolder()" title="New folder">+</button>
+    <button class="folder-btn" id="folder-del-btn" onclick="promptDeleteFolder()" title="Delete current folder" style="${['__all__','__none__'].includes(activeFolder)?'display:none':''}">×</button>
+  `;
+  document.getElementById('folder-select').addEventListener('change', e => {
+    setActiveFolder(e.target.value);
+  });
+}
+function promptNewFolder() {
+  const name = prompt('New folder name:');
+  if (name) createFolder(name);
+}
+function promptDeleteFolder() {
+  if (!['__all__','__none__'].includes(activeFolder)) deleteFolder(activeFolder);
+}
+
 function renderNotesList() {
+  renderFoldersUI();
+
+  // collect all tags across notes visible in current folder
+  const visibleNotes = Object.entries(notes).filter(([id, n]) => {
+    if (activeFolder === '__all__') return true;
+    if (activeFolder === '__none__') return !n.folder;
+    return n.folder === activeFolder;
+  });
+  const allTags = new Set();
+  visibleNotes.forEach(([, n]) => (n.tags||[]).forEach(t => allTags.add(t)));
+  const tagsEl = document.getElementById('sidebar-tags');
+  tagsEl.innerHTML = [...allTags].map(t =>
+    `<span class="tag-filter-chip ${activeTagFilter===t?'active':''}" data-tag="${escHtml(t)}">#${escHtml(t)}</span>`
+  ).join('');
+  tagsEl.querySelectorAll('.tag-filter-chip').forEach(el => {
+    el.addEventListener('click', () => {
+      activeTagFilter = activeTagFilter === el.dataset.tag ? null : el.dataset.tag;
+      renderNotesList();
+    });
+  });
+
+  const ids = visibleNotes
+    .filter(([, n]) => !activeTagFilter || (n.tags||[]).includes(activeTagFilter))
+    .map(([id]) => id)
+    .sort((a,b) => notes[b].updated - notes[a].updated);
+
+  const showFolderChip = (activeFolder === '__all__');
+  notesList.innerHTML = ids.map(id => {
+    const n = notes[id];
+    const d = new Date(n.updated);
+    const dateStr = d.toLocaleDateString(undefined,{month:'short',day:'numeric'});
+    const chip = (showFolderChip && n.folder)
+      ? `<span class="note-item-folder-chip">${escHtml(n.folder)}</span>` : '';
+    return `<div class="note-item ${id===activeId?'active':''}" data-id="${id}">
+      <span class="note-item-name">${chip}${escHtml(n.name)}</span>
+      <span class="note-item-date">${dateStr}</span>
+      <button class="note-delete-btn" data-del="${id}" title="Delete">×</button>
+    </div>`;
+  }).join('');
+  notesList.querySelectorAll('.note-item').forEach(el => {
+    el.addEventListener('click', e => {
+      if (e.target.dataset.del) { deleteNote(e.target.dataset.del); return; }
+      switchNote(el.dataset.id);
+    });
+    // Right-click / long-press → move to folder
+    el.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      showNoteContextMenu(el.dataset.id, e.clientX, e.clientY);
+    });
+  });
+}
+
+// Simple context menu for moving a note to a folder
+function showNoteContextMenu(noteId, x, y) {
+  // Remove any existing menu
+  document.querySelectorAll('.note-ctx-menu').forEach(m => m.remove());
+  const folders = getAllFolders();
+  const currentFolder = notes[noteId].folder || null;
+  const menu = document.createElement('div');
+  menu.className = 'note-ctx-menu';
+  menu.style.cssText = `
+    position: fixed; top: ${y}px; left: ${x}px; z-index: 10000;
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 6px; padding: 4px 0; min-width: 180px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    font-family: var(--mono); font-size: 11px;
+  `;
+  const header = `<div style="padding:4px 12px;color:var(--text3);font-size:9px;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border);margin-bottom:4px">Move to</div>`;
+  const options = [
+    { val: '__none__', label: '(no folder)', active: !currentFolder },
+    ...folders.map(f => ({ val: f, label: f, active: f === currentFolder })),
+    { val: '__new__', label: '+ New folder…', special: true },
+  ];
+  menu.innerHTML = header + options.map(o =>
+    `<div class="ctx-item" data-val="${escHtml(o.val)}" style="padding:5px 12px;cursor:pointer;color:${o.active?'var(--accent2)':'var(--text)'};${o.special?'border-top:1px solid var(--border);margin-top:4px;color:var(--teal)':''}">${o.active?'✓ ':''}${escHtml(o.label)}</div>`
+  ).join('');
+  document.body.appendChild(menu);
+  menu.querySelectorAll('.ctx-item').forEach(item => {
+    item.addEventListener('mouseenter', () => item.style.background = 'var(--surface2)');
+    item.addEventListener('mouseleave', () => item.style.background = '');
+    item.addEventListener('click', () => {
+      const val = item.dataset.val;
+      if (val === '__new__') {
+        menu.remove();
+        const name = prompt('New folder name:');
+        if (name) {
+          createFolder(name);
+          moveNoteToFolder(noteId, name);
+        }
+      } else {
+        moveNoteToFolder(noteId, val);
+        menu.remove();
+        showToast('Moved');
+      }
+    });
+  });
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener('click', function closeMenu() {
+      menu.remove();
+      document.removeEventListener('click', closeMenu);
+    }, { once: true });
+  }, 0);
+}
+
+// Original renderNotesList (kept as reference — not used, replaced above)
+function _old_renderNotesList() {
   // collect all tags across all notes
   const allTags = new Set();
   Object.values(notes).forEach(n => (n.tags||[]).forEach(t => allTags.add(t)));
@@ -1134,7 +1702,17 @@ function renderNotesList() {
   });
 }
 function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-noteName.addEventListener('input', () => { if (notes[activeId]) notes[activeId].name = noteName.value; saveNotes(); renderNotesList(); });
+noteName.addEventListener('input', () => {
+  if (vaultMode) {
+    // Debounced file rename in vault mode
+    clearTimeout(vaultSaveTimer);
+    vaultSaveTimer = setTimeout(handleVaultTitleChange, 800);
+    return;
+  }
+  if (notes[activeId]) notes[activeId].name = noteName.value;
+  saveNotes();
+  renderNotesList();
+});
 noteName.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     e.preventDefault();
@@ -1471,7 +2049,8 @@ function safeRender(md) {
   const extracted = extractMath(md);
   const local = pendingMath;
   pendingMath = savedPending;
-  let html = marked.parse(extracted.replace(/MATHBLOCK_(\d+)_END/g, 'LOCALMATH_$1_END'));
+  const withLists = preserveListNumbering(extracted);
+  let html = marked.parse(withLists.replace(/MATHBLOCK_(\d+)_END/g, 'LOCALMATH_$1_END'));
   html = html.replace(/LOCALMATH_(\d+)_END/g, (_, idx) => {
     const item = local[parseInt(idx)];
     return item ? renderMath(compileMath(item.tex), item.display) : '';
@@ -1866,7 +2445,74 @@ previewInner.addEventListener('click', e => {
 // ── Marked config ──────────────────────────────────────────────────────────
 // Code blocks are pre-extracted in extractCodeBlocks() and rendered via
 // hljs into placeholders, then injected back AFTER marked runs.
-marked.use({ breaks: true, gfm: true });
+// Custom renderer: respect the user's numbering in ordered lists.
+// By default marked renumbers items sequentially (1, 2, 3, 4...) — this
+// hijacks list rendering to preserve the actual numbers the user typed,
+// including jumps like 1, 2, 3, 7.
+marked.use({
+  breaks: true,
+  gfm: true,
+  renderer: {
+    list(body, ordered, start) {
+      if (!ordered) return `<ul>${body}</ul>`;
+      // start === 1 by default; if user typed a different starting number,
+      // marked passes it here. But it still auto-numbers subsequent items.
+      // We rely on start attribute + our listitem override for gaps.
+      const s = start && start !== 1 ? ` start="${start}"` : '';
+      return `<ol${s}>${body}</ol>`;
+    },
+  },
+});
+
+// Pre-parse pass on the raw markdown: for any ordered list block, if the
+// user's numbers aren't perfectly sequential (e.g. 1,2,3,7), replace the
+// whole block with an explicit HTML list using value="N" per item.
+// This runs BEFORE marked parses, injecting raw HTML tokens marked will pass through.
+function preserveListNumbering(md) {
+  const lines = md.split('\n');
+  const out = [];
+  let i = 0;
+  while (i < lines.length) {
+    const listMatch = lines[i].match(/^(\s*)(\d+)\.\s(.*)$/);
+    if (listMatch) {
+      // Collect consecutive numbered items with the same indent
+      const indent = listMatch[1];
+      const items = [];
+      let j = i;
+      while (j < lines.length) {
+        const m = lines[j].match(/^(\s*)(\d+)\.\s(.*)$/);
+        if (!m || m[1] !== indent) break;
+        items.push({ num: parseInt(m[2]), text: m[3] });
+        j++;
+      }
+      // Check if numbers are strictly sequential from items[0].num
+      let sequential = true;
+      for (let k = 1; k < items.length; k++) {
+        if (items[k].num !== items[0].num + k) { sequential = false; break; }
+      }
+      if (sequential || items.length === 1) {
+        // Let marked handle it normally — preserves markdown features (bold, math, etc)
+        for (let k = i; k < j; k++) out.push(lines[k]);
+      } else {
+        // Build raw HTML with explicit value= to preserve gaps
+        const first = items[0].num;
+        out.push(`${indent}<ol start="${first}">`);
+        for (const it of items) {
+          // Escape only <, > and & — but let markdown-like inline content pass through
+          // We use marked.parseInline for the item text so **bold** etc still work
+          const inline = marked.parseInline(it.text);
+          out.push(`${indent}<li value="${it.num}">${inline}</li>`);
+        }
+        out.push(`${indent}</ol>`);
+      }
+      i = j;
+    } else {
+      out.push(lines[i]);
+      i++;
+    }
+  }
+  return out.join('\n');
+}
 
 let pendingCode = [];
 let pendingMath = [];  // [{tex, display}] — extracted before marked to preserve raw backslashes
@@ -2052,7 +2698,8 @@ function render() {
   const md2 = extractCodeBlocks(md1);
   const md3 = parseBoxes(md2);                 // boxes extracted before math
   const md4 = extractMath(md3);                // only outer-document math left
-  let html = marked.parse(md4);
+  const md5 = preserveListNumbering(md4);      // preserve user's numbered list gaps
+  let html = marked.parse(md5);
   html = injectMath(html);                     // outer math back in
   html = processAnchors(html);
   html = processTags(html);
@@ -2490,17 +3137,102 @@ document.getElementById('cases-cancel').addEventListener('click', closeCasesEdit
 document.getElementById('cases-insert').addEventListener('click', insertCasesFromEditor);
 
 // ── Search (Ctrl+F) ────────────────────────────────────────────────────────
-// Find-in-note overlay. Highlights matches in the editor by scrolling to them
-// and selecting them one at a time. Enter/Shift+Enter to cycle, Esc to close.
+// Find-in-note overlay. Highlights matches in the editor by rendering an
+// overlay div behind the textarea with matching text wrapped in <mark>.
+// Enter/Shift+Enter to cycle, Esc to close, Ctrl+F to toggle.
 
 let searchMatches = [];   // array of {start, end}
 let searchIndex = -1;
 let searchQuery = '';
+let searchHighlightLayer = null;
+
+function ensureSearchHighlightLayer() {
+  if (searchHighlightLayer) return searchHighlightLayer;
+  // Create a div positioned exactly over the textarea, behind it visually,
+  // that mirrors the text and paints <mark> spans on matches.
+  const layer = document.createElement('div');
+  layer.id = 'search-highlight-layer';
+  const cs = getComputedStyle(editor);
+  // Position matches textarea exactly
+  layer.style.cssText = `
+    position: absolute;
+    pointer-events: none;
+    overflow: hidden;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    color: transparent;
+    z-index: 1;
+  `;
+  // Copy font-related styles from the textarea
+  ['font','fontSize','fontFamily','fontWeight','lineHeight','letterSpacing',
+   'paddingTop','paddingBottom','paddingLeft','paddingRight',
+   'borderTopWidth','borderBottomWidth','borderLeftWidth','borderRightWidth',
+   'boxSizing'].forEach(prop => {
+    layer.style[prop] = cs[prop];
+  });
+  // Wrap the editor to make positioning work
+  const wrap = editor.parentElement;
+  if (getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
+  wrap.insertBefore(layer, editor);
+  searchHighlightLayer = layer;
+  return layer;
+}
+
+function positionHighlightLayer() {
+  if (!searchHighlightLayer) return;
+  const rect = editor.getBoundingClientRect();
+  const parentRect = editor.parentElement.getBoundingClientRect();
+  searchHighlightLayer.style.top    = (rect.top    - parentRect.top)  + 'px';
+  searchHighlightLayer.style.left   = (rect.left   - parentRect.left) + 'px';
+  searchHighlightLayer.style.width  = rect.width  + 'px';
+  searchHighlightLayer.style.height = rect.height + 'px';
+}
+
+function renderSearchHighlights() {
+  const layer = ensureSearchHighlightLayer();
+  positionHighlightLayer();
+  if (!searchMatches.length || !searchQuery) {
+    layer.innerHTML = '';
+    return;
+  }
+  // Build HTML by walking through matches and wrapping them
+  const text = editor.value;
+  let html = '';
+  let pos = 0;
+  searchMatches.forEach((m, i) => {
+    html += escHtml(text.substring(pos, m.start));
+    const cls = (i === searchIndex) ? 'search-hit search-current' : 'search-hit';
+    html += `<mark class="${cls}">${escHtml(text.substring(m.start, m.end))}</mark>`;
+    pos = m.end;
+  });
+  html += escHtml(text.substring(pos));
+  layer.innerHTML = html;
+  // Sync scroll position with textarea
+  layer.scrollTop = editor.scrollTop;
+  layer.scrollLeft = editor.scrollLeft;
+}
+
+// Keep highlight layer scrolled in sync with textarea
+editor.addEventListener('scroll', () => {
+  if (searchHighlightLayer) {
+    searchHighlightLayer.scrollTop = editor.scrollTop;
+    searchHighlightLayer.scrollLeft = editor.scrollLeft;
+  }
+});
+window.addEventListener('resize', () => {
+  if (searchHighlightLayer && !isSearchOpen()) return;
+  positionHighlightLayer();
+});
+
+function isSearchOpen() {
+  const overlay = document.getElementById('search-overlay');
+  return overlay && overlay.style.display !== 'none';
+}
 
 function openSearch() {
   const overlay = document.getElementById('search-overlay');
   if (!overlay) return;
-  overlay.classList.remove('hidden');
+  overlay.style.display = 'flex';
   const input = document.getElementById('search-input');
   // If user has text selected, use it as the initial query
   const sel = editor.value.substring(editor.selectionStart, editor.selectionEnd);
@@ -2515,8 +3247,18 @@ function openSearch() {
 function closeSearch() {
   const overlay = document.getElementById('search-overlay');
   if (!overlay) return;
-  overlay.classList.add('hidden');
+  overlay.style.display = 'none';
+  // Clear highlights
+  searchMatches = [];
+  searchIndex = -1;
+  searchQuery = '';
+  if (searchHighlightLayer) searchHighlightLayer.innerHTML = '';
   editor.focus();
+}
+
+function toggleSearch() {
+  if (isSearchOpen()) closeSearch();
+  else openSearch();
 }
 
 function updateSearch() {
@@ -2524,25 +3266,26 @@ function updateSearch() {
   const countEl = document.getElementById('search-count');
   searchQuery = input.value;
   searchMatches = [];
+  const priorIndex = searchIndex;
   searchIndex = -1;
   if (!searchQuery) {
     countEl.textContent = '0/0';
+    renderSearchHighlights();
     return;
   }
-  // Case-insensitive substring search over the current editor content
   const haystack = editor.value.toLowerCase();
   const needle = searchQuery.toLowerCase();
   let pos = 0;
   while ((pos = haystack.indexOf(needle, pos)) !== -1) {
     searchMatches.push({ start: pos, end: pos + needle.length });
     pos += needle.length || 1;
-    if (searchMatches.length > 1000) break; // safety cap
+    if (searchMatches.length > 1000) break;
   }
   if (searchMatches.length === 0) {
     countEl.textContent = '0/0';
+    renderSearchHighlights();
     return;
   }
-  // Jump to the first match at or after the current cursor position
   const cursorPos = editor.selectionStart;
   let firstIdx = searchMatches.findIndex(m => m.start >= cursorPos);
   if (firstIdx === -1) firstIdx = 0;
@@ -2561,16 +3304,14 @@ function gotoSearchMatch() {
   if (!match) return;
   editor.focus();
   editor.setSelectionRange(match.start, match.end);
-  // Scroll the match into view — approximate line height * line number
   const lineHeight = parseFloat(getComputedStyle(editor).lineHeight) || 20;
   const line = editor.value.substring(0, match.start).split('\n').length - 1;
   editor.scrollTop = Math.max(0, line * lineHeight - editor.clientHeight / 3);
   document.getElementById('search-count').textContent = `${searchIndex + 1}/${searchMatches.length}`;
-  // Keep the search input focused so typing keeps working
+  renderSearchHighlights();
   setTimeout(() => document.getElementById('search-input').focus(), 0);
 }
 
-// Wire input events
 document.getElementById('search-input').addEventListener('input', updateSearch);
 document.getElementById('search-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') {
@@ -2582,12 +3323,11 @@ document.getElementById('search-input').addEventListener('keydown', e => {
   }
 });
 
-// Global Ctrl+F handler — bypasses the shortcut settings system since this
-// is a browser-standard shortcut users expect to always work
+// Ctrl+F toggles search open/close
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'f') {
     e.preventDefault();
-    openSearch();
+    toggleSearch();
   }
 }, true);
 
@@ -2970,7 +3710,10 @@ editor.addEventListener('input', () => {
     }
   }
   clearTimeout(renderTimer); renderTimer=setTimeout(render,80);
-  clearTimeout(saveTimer);   saveTimer=setTimeout(saveCurrentNote,800);
+  clearTimeout(saveTimer);   saveTimer=setTimeout(() => {
+    if (vaultMode) saveCurrentVaultNote();
+    else saveCurrentNote();
+  }, 800);
   clearTimeout(snippetTimeout); snippetTimeout=setTimeout(checkSnippet,300);
 });
 
@@ -3510,10 +4253,17 @@ editor.addEventListener('keydown', e => {
   }
 
   if (!C && !A && PAIRS[e.key]) {
-    e.preventDefault();
     const s=editor.selectionStart, en=editor.selectionEnd;
     const sel=editor.value.substring(s,en);
     const close=PAIRS[e.key];
+    // If there's no selection and the next character is already the closer,
+    // don't auto-insert another one — just let the character type normally.
+    // This prevents `()` when pressing `(` right before an existing `)`.
+    if (s===en && editor.value[s]===close) {
+      // Fall through: default typing behavior inserts `(` naturally
+      return;
+    }
+    e.preventDefault();
     editor.value=editor.value.substring(0,s)+e.key+sel+close+editor.value.substring(en);
     if (s===en){editor.selectionStart=editor.selectionEnd=s+1;}
     else{editor.selectionStart=s+1;editor.selectionEnd=s+1+sel.length;}
@@ -3677,6 +4427,10 @@ loadNotes();
 editor.focus();
 // Apply user's topbar selection (or defaults on first run)
 applyTopbarSelection();
+// Update vault UI state (hides open-folder button etc if we end up in vault mode)
+updateVaultUIState();
+// Try to restore last-opened vault (async, doesn't block boot)
+tryReopenLastVault();
 // Initialise sync button state
 document.getElementById('sync-btn').style.color = 'var(--green)';
 document.getElementById('sync-btn').style.borderColor = 'var(--green)';

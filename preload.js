@@ -1,4 +1,4 @@
-const { contextBridge } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
 
 // Minimal test — if this works, window.hunspell.ready will be false
 // but window.hunspell will exist (not undefined)
@@ -104,3 +104,21 @@ try {
 }
 
 console.log('[lecturnote] contextBridge.exposeInMainWorld called');
+
+// ── Vault (folder-mode) API ─────────────────────────────────────────────
+// Thin wrappers over the IPC handlers in main.js. All paths sent to the
+// main process are relative to the currently-open vault root.
+contextBridge.exposeInMainWorld('vault', {
+  pickFolder:  ()               => ipcRenderer.invoke('vault:pickFolder'),
+  open:        (folderPath)     => ipcRenderer.invoke('vault:open', folderPath),
+  close:       ()               => ipcRenderer.invoke('vault:close'),
+  list:        (relDir)         => ipcRenderer.invoke('vault:list', relDir),
+  read:        (relPath)        => ipcRenderer.invoke('vault:read', relPath),
+  write:       (relPath, text)  => ipcRenderer.invoke('vault:write', relPath, text),
+  rename:      (oldRel, newRel) => ipcRenderer.invoke('vault:rename', oldRel, newRel),
+  delete:      (relPath)        => ipcRenderer.invoke('vault:delete', relPath),
+  mkdir:       (relPath)        => ipcRenderer.invoke('vault:mkdir', relPath),
+  exists:      (relPath)        => ipcRenderer.invoke('vault:exists', relPath),
+  writeBinary: (relPath, b64)   => ipcRenderer.invoke('vault:writeBinary', relPath, b64),
+  readBinary:  (relPath)        => ipcRenderer.invoke('vault:readBinary', relPath),
+});
