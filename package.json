@@ -1,6 +1,6 @@
 {
   "name": "lecturnote",
-  "version": "1.0.6-beta",
+  "version": "1.0.10-beta",
   "description": "Keyboard-first lecture notes editor for science and mathematics",
   "author": {
     "name": "Samuel",
@@ -56,7 +56,8 @@
     "nspell": "^2.1.5"
   },
   "devDependencies": {
-    "electron": "^29.0.0",
-    "electron-builder": "^24.0.0"
-  }
+    "electron": "^39.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "//": "npm audit may show 1 high-sev issue in extract-zip (transitive dep of @electron/get). This is build-time only, affects downloading Electron binaries, and does not affect the shipped app. Cannot be resolved without upstream fix from the Electron team."
 }
