@@ -606,7 +606,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14
       </select>
     </div>
     <button class="tbar-btn" data-tbid="jump" onclick="openJump()" title="Ctrl+G"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>jump <span class="kb-pill">C-G</span></button>
-    <button class="tbar-btn" data-tbid="stamp" onclick="insertTimestamp()" title="Ctrl+Alt+Space"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>stamp <span class="kb-pill">C-A-Sp</span></button>
+    <button class="tbar-btn" data-tbid="stamp" onclick="insertTimestamp()" title="Ctrl+Alt+T"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>stamp <span class="kb-pill">C-A-T</span></button>
     <button class="tbar-btn" data-tbid="anchor" onclick="openAnchorPicker()" title="Ctrl+Alt+K"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>anchor <span class="kb-pill">C-A-K</span></button>
     <button class="tbar-btn" data-tbid="scratch" onclick="toggleScratchpad()" title="Ctrl+Alt+Z"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>scratch <span class="kb-pill">C-A-Z</span></button>
     <button class="tbar-btn" data-tbid="table" onclick="openTable()" title="Ctrl+Alt+Y" style="display:none"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>table <span class="kb-pill">C-A-Y</span></button>
@@ -812,6 +812,14 @@ let vaultCurrentFile = null;
 let vaultTree        = [];
 let vaultExpanded    = new Set();
 let activeFolder     = null; // initialized properly further down; null works for all comparisons
+
+// Undo/redo state — also hoisted so resetUndoHistory() from loadActiveNote()
+// at boot doesn't hit temporal dead zone.
+const undoStack = [];
+const redoStack = [];
+let lastSnapshotAt = 0;
+let lastSnapshotLen = 0;
+let suppressSnapshot = false;
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
 // ║  LECTURNOTE COMMANDS  — edit this section freely                        ║
@@ -1077,6 +1085,7 @@ function loadActiveNote() {
   if (!n) return;
   editor.value = n.content;
   noteName.value = n.name;
+  resetUndoHistory();
   render();
 }
 function switchNote(id) {
@@ -1167,6 +1176,7 @@ async function openVault(folderPath) {
     await window.vault.open(folderPath);
     vaultMode = true;
     vaultRoot = folderPath;
+    vaultImageCache.clear(); // fresh vault, drop cached images from previous one
     localStorage.setItem(VAULT_LAST_KEY, folderPath);
     pushRecentVault(folderPath);
     try {
@@ -1200,6 +1210,7 @@ async function closeVault() {
   vaultRoot = null;
   vaultCurrentFile = null;
   vaultTree = [];
+  vaultImageCache.clear();
   localStorage.removeItem(VAULT_LAST_KEY);
   // Restore library UI — tags row was hidden by renderVaultSidebar
   const tagsEl = document.getElementById('sidebar-tags');
@@ -1251,6 +1262,7 @@ async function openVaultNote(relPath) {
     // Note name = filename without .md
     const base = relPath.split('/').pop();
     noteName.value = base.replace(/\.md$/i, '');
+    resetUndoHistory();
     render();
     renderVaultSidebar();
     editor.focus();
@@ -3030,16 +3042,123 @@ function showToast(msg) {
   toastTimer=setTimeout(()=>toastEl.classList.remove('show'),1900);
 }
 
-// ── Cursor helpers ─────────────────────────────────────────────────────────
+// ── Undo/redo stack ─────────────────────────────────────────────────────
+// The browser's built-in undo is unreliable when JavaScript modifies the
+// textarea (execCommand and value= assignments both have bugs and limits).
+// We keep our own unbounded stack: every mutation snapshots the editor state
+// before applying, so Ctrl+Z rewinds cleanly and Ctrl+Shift+Z redoes.
+//
+// Typing is grouped: a snapshot is only taken if enough time (600ms) or
+// enough characters (~10) have passed since the last one, so pressing Ctrl+Z
+// undoes a word/sentence at a time rather than one character.
+// (undoStack, redoStack, lastSnapshotAt, lastSnapshotLen, suppressSnapshot
+//  are hoisted to the top of the script so boot code can safely call
+//  resetUndoHistory().)
+const UNDO_GROUP_MS = 600;
+const UNDO_GROUP_CHARS = 10;
+
+// Take a snapshot of the editor's current value + selection.
+function snapshotEditor(force) {
+  if (suppressSnapshot) return;
+  const now = Date.now();
+  const val = editor.value;
+  // Group with the previous snapshot if this is a typing burst
+  if (!force && undoStack.length) {
+    const top = undoStack[undoStack.length - 1];
+    const dt  = now - lastSnapshotAt;
+    const dLen = Math.abs(val.length - lastSnapshotLen);
+    if (dt < UNDO_GROUP_MS && dLen < UNDO_GROUP_CHARS) {
+      // Update the "future" of the top snapshot to include the current state
+      // (we don't need to; the top snapshot is the pre-state, and the current
+      // editor is the post-state — Ctrl+Z restores top, so we do nothing.)
+      return;
+    }
+  }
+  undoStack.push({
+    value: val,
+    selStart: editor.selectionStart,
+    selEnd: editor.selectionEnd,
+  });
+  lastSnapshotAt = now;
+  lastSnapshotLen = val.length;
+  // Any new snapshot invalidates the redo stack
+  redoStack.length = 0;
+  // Soft cap so a single note's history doesn't grow unbounded
+  // (5000 snapshots at ~ few KB each = a few MB worst case)
+  if (undoStack.length > 5000) undoStack.splice(0, undoStack.length - 5000);
+}
+
+// Force-snapshot before any programmatic edit (box insert, snippet, paste,
+// wrapSelection, etc.) so that Ctrl+Z reverses those actions cleanly.
+// Also breaks the typing group so subsequent typing gets its own snapshot
+// (otherwise typing right after a programmatic edit would merge into it).
+function snapshotBeforeEdit() {
+  snapshotEditor(true);
+  // Setting lastSnapshotAt to -Infinity guarantees the next snapshotEditor(false)
+  // call will pass the "dt < UNDO_GROUP_MS" check with a huge dt (positive infinity)
+  // and take a fresh snapshot.
+  lastSnapshotAt = -Infinity;
+}
+
+function undo() {
+  if (!undoStack.length) return;
+  const snap = undoStack.pop();
+  // Push current state to redo BEFORE mutating
+  redoStack.push({
+    value: editor.value,
+    selStart: editor.selectionStart,
+    selEnd: editor.selectionEnd,
+  });
+  suppressSnapshot = true;
+  editor.value = snap.value;
+  editor.selectionStart = snap.selStart;
+  editor.selectionEnd   = snap.selEnd;
+  suppressSnapshot = false;
+  lastSnapshotAt = -Infinity; // guarantee next typing input creates a new snapshot
+  render();
+  // In vault mode, persist the reverted state; in library mode too
+  if (vaultMode) { clearTimeout(vaultSaveTimer); vaultSaveTimer = setTimeout(() => saveCurrentVaultNote(), 500); }
+  else { saveCurrentNote(); }
+}
+
+function redo() {
+  if (!redoStack.length) return;
+  const snap = redoStack.pop();
+  undoStack.push({
+    value: editor.value,
+    selStart: editor.selectionStart,
+    selEnd: editor.selectionEnd,
+  });
+  suppressSnapshot = true;
+  editor.value = snap.value;
+  editor.selectionStart = snap.selStart;
+  editor.selectionEnd   = snap.selEnd;
+  suppressSnapshot = false;
+  lastSnapshotAt = -Infinity;
+  render();
+  if (vaultMode) { clearTimeout(vaultSaveTimer); vaultSaveTimer = setTimeout(() => saveCurrentVaultNote(), 500); }
+  else { saveCurrentNote(); }
+}
+
+// Reset undo history when switching notes (so undoing in note B doesn't
+// bring back note A's content).
+function resetUndoHistory() {
+  undoStack.length = 0;
+  redoStack.length = 0;
+  lastSnapshotAt = -Infinity;
+  lastSnapshotLen = editor.value.length;
+}
+
+// Cursor helpers
 function insertAtCursor(text, selectFrom, selectTo) {
-  const s = editor.selectionStart;
-  // Use execCommand so browser undo (Ctrl+Z) tracks the change.
-  // This replaces the current selection with `text` (if selection is empty
-  // it just inserts at cursor position).
-  document.execCommand('insertText', false, text);
+  snapshotBeforeEdit();
+  const s = editor.selectionStart, e = editor.selectionEnd;
+  editor.value = editor.value.substring(0, s) + text + editor.value.substring(e);
   if (selectFrom !== undefined) {
     editor.selectionStart = s + selectFrom;
     editor.selectionEnd   = s + (selectTo !== undefined ? selectTo : selectFrom);
+  } else {
+    editor.selectionStart = editor.selectionEnd = s + text.length;
   }
   editor.focus();
   render();
@@ -3052,17 +3171,15 @@ function wrapSelection(before, after) {
   // Toggle off: if selection is already wrapped, unwrap it
   const bLen = before.length, aLen = after.length;
   if (val.substring(s - bLen, s) === before && val.substring(e, e + aLen) === after) {
-    // Already wrapped — remove markers using execCommand for undo support
-    editor.selectionStart = s - bLen;
-    editor.selectionEnd   = e + aLen;
-    document.execCommand('insertText', false, sel);
+    snapshotBeforeEdit();
+    editor.value = val.substring(0, s - bLen) + sel + val.substring(e + aLen);
     editor.selectionStart = s - bLen;
     editor.selectionEnd   = s - bLen + sel.length;
     render(); return;
   }
 
-  // Wrap using execCommand so browser undo (Ctrl+Z) works
-  document.execCommand('insertText', false, before + sel + after);
+  snapshotBeforeEdit();
+  editor.value = val.substring(0, s) + before + sel + after + val.substring(e);
   editor.selectionStart = s + bLen;
   editor.selectionEnd   = s + bLen + sel.length;
   render();
@@ -3921,6 +4038,13 @@ function expandSnippet() {
 }
 
 // ── Inline [[# trigger ─────────────────────────────────────────────────────
+// Take a snapshot BEFORE the browser applies each input mutation. Fires for
+// every typed key, deletion, paste, IME composition, etc. snapshotEditor()
+// no-ops within the same burst so this is cheap.
+editor.addEventListener('beforeinput', () => {
+  snapshotEditor(false);
+});
+
 editor.addEventListener('input', () => {
   const pos=editor.selectionStart;
   const before=editor.value.substring(0,pos);
@@ -3942,59 +4066,197 @@ editor.addEventListener('input', () => {
 });
 
 // ── Image paste ────────────────────────────────────────────────────────────
+// In LIBRARY mode: images are stored inline in notes[activeId].images
+// (keyed by a short id). The editor gets a compact reference like
+// ![image1](img:1) instead of a 500-char base64 blob.
+//
+// In VAULT mode: images are written as real files next to the note under
+// _images/<hash>.<ext>, and the editor gets a relative path like
+// ![imageN](_images/<hash>.png). Using content-hash filenames guarantees
+// two things:
+//   (1) The same image pasted twice is only stored once
+//   (2) Filenames NEVER collide across notes/folders (so pasting in
+//       folder A never overwrites an image referenced by folder B)
+// This matters — the previous "image1 shows up everywhere" bug caused
+// data loss because two different notes both had img:1 pointing at
+// different physical images.
 
-// Resolve img:N references in rendered HTML to actual data URLs from
-// the current note's image store.  Runs on the final HTML before injection.
+// Simple SHA-1 hash of a data URL for content-addressed image filenames.
+// Uses Web Crypto (available in the renderer). Returns first 12 hex chars.
+async function hashDataUrl(dataUrl) {
+  // Hash the base64 payload only (skip the "data:image/png;base64," prefix)
+  const b64 = dataUrl.split(',')[1] || dataUrl;
+  const bytes = new TextEncoder().encode(b64);
+  const buf = await crypto.subtle.digest('SHA-1', bytes);
+  const arr = Array.from(new Uint8Array(buf));
+  return arr.slice(0, 6).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function extForMime(mime) {
+  if (mime === 'image/png')  return 'png';
+  if (mime === 'image/jpeg' || mime === 'image/jpg') return 'jpg';
+  if (mime === 'image/gif')  return 'gif';
+  if (mime === 'image/webp') return 'webp';
+  if (mime === 'image/svg+xml') return 'svg';
+  return 'png';
+}
+
+// In-memory cache for vault image data URLs, so we don't re-read from disk
+// on every render. Keyed by absolute-ish path within the vault.
+const vaultImageCache = new Map();
+
+// Resolve img references in rendered HTML.
+//   - Library note: replace src="img:N" with the note's inline data URL
+//   - Vault note: replace src="_images/foo.png" with a data URL loaded
+//     from disk (async — see resolveVaultImageRefs)
 function resolveImageRefs(html) {
+  if (vaultMode) {
+    // Vault paths use relative paths; we resolve them async into cache
+    // then trigger a re-render if new items were loaded.
+    return resolveVaultImageRefs(html);
+  }
   const note = notes[activeId];
   if (!note || !note.images) return html;
-  return html.replace(/src="img:(\d+)"/g, (_, id) => {
+  return html.replace(/src="img:([^"]+)"/g, (_, id) => {
     const dataUrl = note.images[id];
     return dataUrl ? `src="${dataUrl}"` : 'src=""';
   });
 }
 
+// For vault mode: swap src="_images/x.png" with a data URL from cache.
+// If any referenced image isn't in cache yet, fire-and-forget a fetch
+// and re-render when done. Uses a broken-image placeholder in the meantime.
+function resolveVaultImageRefs(html) {
+  if (!vaultCurrentFile) return html;
+  const parentDir = vaultCurrentFile.split('/').slice(0, -1).join('/');
+  const missing = new Set();
+
+  const resolved = html.replace(/src="([^"]+)"/g, (whole, src) => {
+    // Only intercept relative paths that don't look like URLs or data URLs
+    if (/^(https?:|data:|blob:|file:|\/\/|\/)/.test(src)) return whole;
+    // Resolve relative to the note's directory in the vault
+    const rel = parentDir ? `${parentDir}/${src}` : src;
+    // Normalize (handle any ./ or ../ inside)
+    const norm = normalizeVaultPath(rel);
+    if (!norm) return whole;
+    if (vaultImageCache.has(norm)) {
+      return `src="${vaultImageCache.get(norm)}"`;
+    }
+    missing.add(norm);
+    return `src=""`;
+  });
+
+  if (missing.size) {
+    // Fetch missing images in parallel, then re-render once done
+    Promise.all([...missing].map(async p => {
+      try {
+        const b64 = await window.vault.readBinary(p);
+        // Guess MIME from extension
+        const ext = p.split('.').pop().toLowerCase();
+        const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg'
+                    : ext === 'gif'  ? 'image/gif'
+                    : ext === 'webp' ? 'image/webp'
+                    : ext === 'svg'  ? 'image/svg+xml'
+                    : 'image/png';
+        vaultImageCache.set(p, `data:${mime};base64,${b64}`);
+      } catch(e) {
+        // Store an empty entry so we don't keep retrying missing files
+        vaultImageCache.set(p, '');
+      }
+    })).then(() => render());
+  }
+  return resolved;
+}
+
+// Normalize a vault-relative path — collapse "./" and "../" segments.
+// Returns null if the path escapes the vault root.
+function normalizeVaultPath(rel) {
+  const parts = rel.split('/');
+  const out = [];
+  for (const p of parts) {
+    if (!p || p === '.') continue;
+    if (p === '..') { if (out.length === 0) return null; out.pop(); }
+    else out.push(p);
+  }
+  return out.join('/');
+}
+
 // Prune image references that are no longer used in the note text.
-// Called on save so orphaned images don't bloat storage indefinitely.
+// LIBRARY MODE ONLY — vault-mode files-on-disk are cleaned by a separate
+// path (or left alone; deletion is cheap and orphaned files are recoverable).
+// Never touches notes[] when in vault mode: prevents the bug where switching
+// to a vault file and typing caused library note images to be deleted because
+// the editor content didn't reference img:N anymore.
 function pruneUnusedImages() {
+  if (vaultMode) return; // critical guard — do NOT touch library notes here
   const note = notes[activeId];
   if (!note || !note.images) return;
   const md = editor.value;
   const used = new Set();
-  const re = /!\[[^\]]*\]\(img:(\d+)\)/g;
+  const re = /!\[[^\]]*\]\(img:([^)]+)\)/g;
   let m;
   while ((m = re.exec(md)) !== null) used.add(m[1]);
   for (const id of Object.keys(note.images)) {
     if (!used.has(id)) delete note.images[id];
   }
 }
-// Images are stored per-note in notes[activeId].images (keyed by short id).
-// The editor gets a compact reference like ![image1](img:1) instead of a
-// 500-char base64 blob. Rendering resolves img:N back to the data URL.
-editor.addEventListener('paste', e => {
-  const items=e.clipboardData?.items;
+
+editor.addEventListener('paste', async e => {
+  const items = e.clipboardData?.items;
   if (!items) return;
   for (const item of items) {
-    if (item.type.startsWith('image/')) {
-      e.preventDefault();
-      const file=item.getAsFile();
-      const reader=new FileReader();
-      reader.onload=ev=>{
-        const dataUrl=ev.target.result;
-        const note = notes[activeId];
-        if (!note) return;
-        if (!note.images) note.images = {};
-        // Find next available id
-        const existingIds = Object.keys(note.images).map(k => parseInt(k)).filter(n => !isNaN(n));
-        const nextId = existingIds.length ? Math.max(...existingIds) + 1 : 1;
-        note.images[nextId] = dataUrl;
-        saveNotes();
-        insertAtCursor(`\n![image${nextId}](img:${nextId})\n`);
-        showToast(`Image ${nextId} pasted`);
-      };
+    if (!item.type.startsWith('image/')) continue;
+    e.preventDefault();
+    const file = item.getAsFile();
+
+    // Read as base64 data URL
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload  = ev => resolve(ev.target.result);
+      reader.onerror = () => reject(new Error('read failed'));
       reader.readAsDataURL(file);
-      return;
+    }).catch(err => { showToast('Image read failed: ' + err.message); return null; });
+    if (!dataUrl) return;
+
+    if (vaultMode) {
+      // Vault mode: write file to _images/<hash>.<ext> next to the note.
+      // Content-hash filenames prevent collisions between notes/folders and
+      // dedupe repeated pastes of the same image.
+      if (!vaultCurrentFile) { showToast('Open a note first'); return; }
+      try {
+        const hash = await hashDataUrl(dataUrl);
+        const ext  = extForMime(item.type);
+        const parentDir = vaultCurrentFile.split('/').slice(0, -1).join('/');
+        const filename  = `${hash}.${ext}`;
+        const imagesDir = parentDir ? `${parentDir}/_images` : '_images';
+        const relPath   = `${imagesDir}/${filename}`;
+        const b64       = dataUrl.split(',')[1];
+        // Only write if it doesn't already exist (hash-based dedup)
+        const alreadyThere = await window.vault.exists(relPath);
+        if (!alreadyThere) await window.vault.writeBinary(relPath, b64);
+        // Cache the data URL so render doesn't need to fetch it back
+        vaultImageCache.set(relPath, dataUrl);
+        // Insert reference (relative to the note's directory)
+        insertAtCursor(`\n![image](_images/${filename})\n`);
+        showToast(`Image saved to _images/`);
+      } catch(err) {
+        console.error(err);
+        showToast('Image save failed: ' + err.message);
+      }
+    } else {
+      // Library mode: inline base64 storage keyed by content hash.
+      const note = notes[activeId];
+      if (!note) { showToast('No active note'); return; }
+      if (!note.images) note.images = {};
+      // Use content hash as the id so pasting the same image twice dedupes
+      // and IDs never collide across notes if content ever moves.
+      const hash = await hashDataUrl(dataUrl);
+      note.images[hash] = dataUrl;
+      saveNotes();
+      insertAtCursor(`\n![image](img:${hash})\n`);
+      showToast(`Image pasted`);
     }
+    return;
   }
 });
 
@@ -4123,7 +4385,7 @@ const SHORTCUT_DEFAULTS = {
   'anchor':     { key:'k', mods:'ctrl+alt', label:'Insert anchor',      desc:'Opens the internal anchor picker' },
   'code':       { key:'j', mods:'ctrl+alt', label:'Code block',         desc:'Opens the code language picker' },
   'scratchpad': { key:'z', mods:'ctrl+alt', label:'Toggle scratchpad',  desc:'Opens/closes the floating scratchpad' },
-  'timestamp':  { key:' ', mods:'ctrl+alt', label:'Insert timestamp',   desc:'Inserts current time [HH:MM]' },
+  'timestamp':  { key:'t', mods:'ctrl+alt', label:'Insert timestamp',   desc:'Inserts current time [HH:MM]' },
   'exercise':   { key:'x', mods:'ctrl+alt', label:'Exercise block',     desc:'Inserts an exercise with solution' },
   'newnote':    { key:'m', mods:'ctrl+alt', label:'New note',           desc:'Creates a new empty note' },
   // Ctrl family
@@ -4171,6 +4433,13 @@ const SHORTCUTS_STORAGE_KEY = 'lecturnote_shortcuts';
 function loadShortcuts() {
   try {
     const saved = JSON.parse(localStorage.getItem(SHORTCUTS_STORAGE_KEY) || '{}');
+    // One-off migration: earlier versions used Ctrl+Alt+Space for timestamp,
+    // which on Swiss/German/Spanish/etc. keyboards collides with AltGr+Space
+    // (the OS produces a non-breaking space or eats the event entirely). If
+    // a user has that stale binding, forget it so the new default applies.
+    if (saved.timestamp && saved.timestamp.key === ' ' && saved.timestamp.mods === 'ctrl+alt') {
+      delete saved.timestamp;
+    }
     const result = {};
     for (const id of Object.keys(SHORTCUT_DEFAULTS)) {
       const def = SHORTCUT_DEFAULTS[id];
@@ -4225,7 +4494,7 @@ let recordingId = null;
 // are always visible — the picker only controls the customizable ones.
 const TOPBAR_BUTTONS = {
   'jump':    { label: 'Jump palette',      hint: 'Ctrl+G' },
-  'stamp':   { label: 'Timestamp',         hint: 'Ctrl+Alt+Space' },
+  'stamp':   { label: 'Timestamp',         hint: 'Ctrl+Alt+T' },
   'anchor':  { label: 'Anchor picker',     hint: 'Ctrl+Alt+K' },
   'scratch': { label: 'Scratchpad',        hint: 'Ctrl+Alt+Z' },
   'table':   { label: 'Table editor',      hint: 'Ctrl+Alt+Y' },
@@ -4457,6 +4726,19 @@ function navigateExerciseField() {
 // ── Keyboard handler ───────────────────────────────────────────────────────
 editor.addEventListener('keydown', e => {
   const C=e.ctrlKey||e.metaKey, A=e.altKey, S=e.shiftKey;
+
+  // Undo / redo — intercept BEFORE the browser's built-in undo so we own the
+  // full history. Ctrl+Z (undo), Ctrl+Shift+Z (redo), Ctrl+Y (redo alt).
+  if (C && !A && e.key.toLowerCase() === 'z') {
+    e.preventDefault();
+    if (S) redo(); else undo();
+    return;
+  }
+  if (C && !A && !S && e.key.toLowerCase() === 'y') {
+    e.preventDefault();
+    redo();
+    return;
+  }
 
   if ((e.key===' '||e.key==='Enter')&&!C&&!A) {
     const pos    = editor.selectionStart;
