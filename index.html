@@ -79,6 +79,26 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14
 #editor.flash-green{background:rgba(78,202,139,0.07)}
 #editor.flash-purple{background:rgba(124,106,247,0.08)}
 
+/* ── View mode toggle (editor-only / split / preview-only) ── */
+.view-toggle{display:inline-flex;gap:2px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;padding:2px;margin-left:8px}
+.view-toggle .view-btn{background:transparent;border:none;color:var(--text3);cursor:pointer;padding:3px 7px;border-radius:3px;display:flex;align-items:center;transition:background 0.1s,color 0.1s}
+.view-toggle .view-btn:hover{background:var(--surface);color:var(--text2)}
+.view-toggle .view-btn.active{background:var(--surface);color:var(--accent2)}
+/* Floating variant for preview-only mode */
+.view-toggle-floating{position:absolute;top:10px;right:14px;z-index:10;opacity:0;pointer-events:none;transition:opacity 0.15s;background:var(--surface);box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+#preview-pane{position:relative}
+/* Only show the floating toggle when in preview-only mode */
+body.view-preview .view-toggle-floating{opacity:1;pointer-events:auto}
+body.view-preview .view-toggle-floating:hover{opacity:1}
+/* Hide the editor-header toggle when editor is hidden (it's unreachable) */
+body.view-preview #editor-pane{display:none}
+body.view-editor #preview-pane{display:none}
+/* When one pane is hidden, let the other take the whole width */
+body.view-editor #editor-pane,
+body.view-preview #preview-pane{flex:1;border-right:none}
+/* Hide the editor-header's duplicate toggle on narrow displays — the floating one covers it */
+@media (max-width: 600px){.view-toggle{display:none}}
+
 /* ── Preview ── */
 #preview-pane{flex:1;overflow-y:auto;padding:22px 32px 60px;background:var(--bg);min-width:0}
 #preview-pane .jump-target{animation:jump-flash 1s ease}
@@ -90,6 +110,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14
 #preview-pane p{line-height:1.78;margin:0 0 10px;color:var(--text)}
 #preview-pane ul,#preview-pane ol{margin:0 0 10px 20px;line-height:1.78}
 #preview-pane li{color:var(--text);margin-bottom:3px}
+/* Explicit ordered lists (built by preserveListNumbering so numbers always
+   match what the user typed). Match the surrounding ul/ol look exactly. */
+#preview-pane ol.ln-ol{list-style-type:decimal;padding-left:0}
+#preview-pane ol.ln-ol li{display:list-item}
 #preview-pane strong{color:var(--amber);font-weight:600}
 #preview-pane em{color:var(--text2);font-style:italic}
 #preview-pane strong em, #preview-pane em strong{color:var(--coral);font-weight:600;font-style:italic}
@@ -638,6 +662,18 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14
       <span class="dot"></span>
       <span>editor · markdown + math</span>
       <span id="wordcount" style="margin-left:auto">0 words</span>
+      <!-- View toggle: switch between split / editor-only / preview-only -->
+      <div class="view-toggle" title="View mode (Ctrl+Alt+V to cycle)">
+        <button type="button" class="view-btn" data-view="editor"  onclick="setViewMode('editor')"  title="Editor only">
+          <svg viewBox="0 0 16 16" width="12" height="12"><rect x="1" y="2" width="14" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/><line x1="4" y1="6" x2="12" y2="6" stroke="currentColor" stroke-width="1.2"/><line x1="4" y1="9" x2="12" y2="9" stroke="currentColor" stroke-width="1.2"/><line x1="4" y1="12" x2="9"  y2="12" stroke="currentColor" stroke-width="1.2"/></svg>
+        </button>
+        <button type="button" class="view-btn" data-view="split"   onclick="setViewMode('split')"   title="Split view">
+          <svg viewBox="0 0 16 16" width="12" height="12"><rect x="1" y="2" width="14" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/><line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" stroke-width="1.4"/></svg>
+        </button>
+        <button type="button" class="view-btn" data-view="preview" onclick="setViewMode('preview')" title="Preview only">
+          <svg viewBox="0 0 16 16" width="12" height="12"><rect x="1" y="2" width="14" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M3 8 Q 8 4.2 13 8 Q 8 11.8 3 8 Z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+        </button>
+      </div>
     </div>
     <textarea id="editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
 
@@ -729,6 +765,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14
 
   <!-- Preview pane -->
   <div id="preview-pane">
+    <!-- Floating view toggle (only visible when editor is hidden, so the user
+         can still switch back without opening Settings) -->
+    <div class="view-toggle view-toggle-floating" id="preview-view-toggle" title="View mode (Ctrl+Alt+V)">
+      <button type="button" class="view-btn" data-view="editor"  onclick="setViewMode('editor')"  title="Editor only">
+        <svg viewBox="0 0 16 16" width="12" height="12"><rect x="1" y="2" width="14" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/><line x1="4" y1="6" x2="12" y2="6" stroke="currentColor" stroke-width="1.2"/><line x1="4" y1="9" x2="12" y2="9" stroke="currentColor" stroke-width="1.2"/><line x1="4" y1="12" x2="9"  y2="12" stroke="currentColor" stroke-width="1.2"/></svg>
+      </button>
+      <button type="button" class="view-btn" data-view="split"   onclick="setViewMode('split')"   title="Split view">
+        <svg viewBox="0 0 16 16" width="12" height="12"><rect x="1" y="2" width="14" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/><line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" stroke-width="1.4"/></svg>
+      </button>
+      <button type="button" class="view-btn" data-view="preview" onclick="setViewMode('preview')" title="Preview only">
+        <svg viewBox="0 0 16 16" width="12" height="12"><rect x="1" y="2" width="14" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M3 8 Q 8 4.2 13 8 Q 8 11.8 3 8 Z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+      </button>
+    </div>
     <div id="preview-inner"></div>
     <div id="exercises-section" class="empty">
       <div id="exercises-section-title">Exercises</div>
@@ -2700,10 +2749,16 @@ marked.use({
   },
 });
 
-// Pre-parse pass on the raw markdown: for any ordered list block, if the
-// user's numbers aren't perfectly sequential (e.g. 1,2,3,7), replace the
-// whole block with an explicit HTML list using value="N" per item.
-// This runs BEFORE marked parses, injecting raw HTML tokens marked will pass through.
+// Pre-parse pass on the raw markdown: every ordered list block is rewritten
+// as explicit HTML with the exact numbers the user typed. Markdown's own
+// ordered-list behavior is bypassed completely, which fixes three problems:
+//   1. Numbers always match what you typed (1, 2, 3  stays 1, 2, 3; a gap
+//      like 1, 2, 7 stays 1, 2, 7; starting at 5 stays at 5).
+//   2. Two lists separated by only a blank line stay separate (markdown would
+//      merge them and renumber continuously).
+//   3. Both lists in a row starting at 1 both show 1 (not 1 and 4).
+// We emit a wrapper class so the preview CSS can style these the same as
+// any other list in the note.
 function preserveListNumbering(md) {
   const lines = md.split('\n');
   const out = [];
@@ -2721,26 +2776,17 @@ function preserveListNumbering(md) {
         items.push({ num: parseInt(m[2]), text: m[3] });
         j++;
       }
-      // Check if numbers are strictly sequential from items[0].num
-      let sequential = true;
-      for (let k = 1; k < items.length; k++) {
-        if (items[k].num !== items[0].num + k) { sequential = false; break; }
+      // Always emit explicit HTML — bypasses marked's ordered-list behavior
+      // entirely so the rendered numbers always match the user's input.
+      const first = items[0].num;
+      out.push(`${indent}<ol class="ln-ol" start="${first}">`);
+      for (const it of items) {
+        // parseInline preserves bold, italic, inline code, inline math
+        // tokens (MATHBLOCK_N_END), inline anchors, etc.
+        const inline = marked.parseInline(it.text);
+        out.push(`${indent}<li value="${it.num}">${inline}</li>`);
       }
-      if (sequential || items.length === 1) {
-        // Let marked handle it normally — preserves markdown features (bold, math, etc)
-        for (let k = i; k < j; k++) out.push(lines[k]);
-      } else {
-        // Build raw HTML with explicit value= to preserve gaps
-        const first = items[0].num;
-        out.push(`${indent}<ol start="${first}">`);
-        for (const it of items) {
-          // Escape only <, > and & — but let markdown-like inline content pass through
-          // We use marked.parseInline for the item text so **bold** etc still work
-          const inline = marked.parseInline(it.text);
-          out.push(`${indent}<li value="${it.num}">${inline}</li>`);
-        }
-        out.push(`${indent}</ol>`);
-      }
+      out.push(`${indent}</ol>`);
       i = j;
     } else {
       out.push(lines[i]);
@@ -3762,6 +3808,34 @@ function exportPDF() {
 let sidebarNavMode = false;   // true when sidebar is in keyboard nav mode
 let sidebarNavIndex = 0;      // index of currently highlighted note
 
+// ── View modes ─────────────────────────────────────────────────────────
+// 'split'   — editor + preview side by side (default)
+// 'editor'  — editor only (preview hidden — useful when a second window
+//             like slides needs screen real-estate alongside the editor)
+// 'preview' — preview only (editor hidden — useful when studying/reviewing)
+// Cycled with Ctrl+Alt+V, buttons in editor header + floating in preview.
+// Persists per device so the last choice sticks across restarts.
+const VIEW_MODE_KEY = 'lecturnote_view_mode';
+const VIEW_MODES = ['split', 'editor', 'preview'];
+function setViewMode(mode) {
+  if (!VIEW_MODES.includes(mode)) mode = 'split';
+  document.body.classList.remove('view-split', 'view-editor', 'view-preview');
+  document.body.classList.add('view-' + mode);
+  // Mark the active button in both toolbars
+  document.querySelectorAll('.view-toggle .view-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.view === mode);
+  });
+  localStorage.setItem(VIEW_MODE_KEY, mode);
+  // Keep focus on editor when it's visible so typing works without clicking
+  if ((mode === 'editor' || mode === 'split') && typeof editor !== 'undefined' && editor) editor.focus();
+  if (typeof render === 'function') render();
+}
+function cycleViewMode() {
+  const current = localStorage.getItem(VIEW_MODE_KEY) || 'split';
+  const idx = VIEW_MODES.indexOf(current);
+  setViewMode(VIEW_MODES[(idx + 1) % VIEW_MODES.length]);
+}
+
 function toggleSidebar() {
   sidebarOpen=!sidebarOpen;
   document.getElementById('sidebar').classList.toggle('open',sidebarOpen);
@@ -4388,6 +4462,7 @@ const SHORTCUT_DEFAULTS = {
   'timestamp':  { key:'t', mods:'ctrl+alt', label:'Insert timestamp',   desc:'Inserts current time [HH:MM]' },
   'exercise':   { key:'x', mods:'ctrl+alt', label:'Exercise block',     desc:'Inserts an exercise with solution' },
   'newnote':    { key:'m', mods:'ctrl+alt', label:'New note',           desc:'Creates a new empty note' },
+  'viewmode':   { key:'v', mods:'ctrl+alt', label:'Toggle view mode',   desc:'Cycles split / editor-only / preview-only' },
   // Ctrl family
   'bold':       { key:'b', mods:'ctrl', label:'Bold',                   desc:'Wraps selection in **bold**' },
   'italic':     { key:'i', mods:'ctrl', label:'Italic',                 desc:'Wraps selection in *italic*' },
@@ -4418,6 +4493,7 @@ const SHORTCUT_ACTIONS = {
   'timestamp':  () => insertTimestamp(),
   'exercise':   () => insertExercise(),
   'newnote':    () => newNote(),
+  'viewmode':   () => cycleViewMode(),
   'bold':       () => wrapSelection('**','**'),
   'italic':     () => wrapSelection('*','*'),
   'inlinecode': () => wrapSelection('`','`'),
@@ -4931,6 +5007,8 @@ def needleman_wunsch(seq1, seq2, match=1, mismatch=-1, gap=-2):
 // ── Boot ───────────────────────────────────────────────────────────────────
 loadNotes();
 editor.focus();
+// Apply saved view mode (split / editor-only / preview-only)
+setViewMode(localStorage.getItem(VIEW_MODE_KEY) || 'split');
 // Apply user's topbar selection (or defaults on first run)
 applyTopbarSelection();
 // Update vault UI state (hides open-folder button etc if we end up in vault mode)
